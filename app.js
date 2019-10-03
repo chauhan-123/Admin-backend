@@ -14,7 +14,7 @@ app.use(cors());
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(morgan('dev'));
-app.use(express.static(path.join(__dirname, '../Images')))
+app.use(express.static(path.join(__dirname, '../Images/')))
 
 // Routes
 app.use(userrouter)
