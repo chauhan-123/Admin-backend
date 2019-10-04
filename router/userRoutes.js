@@ -338,12 +338,8 @@ router.put("/update_book", (req, res) => {
 router.delete("/delete_book", (req, res) => {
     try {
         var _id = req.body._id;
-         var book = req.body.book;
-        // var author = req.body.author;
-        // var price = req.body.price;
-        // var description = req.body.description;
-        User.remove({ 'book': req.body.book }).then((result) => {
-            res.status(200).json({ message : 'deleted succesfully ', result:result});
+        addBooksSchema.remove({ '_id': _id }).then((result) => {
+            res.status(200).json({ message: 'deleted succesfully ', result: result });
         })
     } catch (e) {
         res.status(500).json({ error: e });
