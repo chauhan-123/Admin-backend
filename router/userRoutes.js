@@ -14,6 +14,7 @@ var app = express();
 var registraion = require('../models/user');
 var registraionFrom = registraion.User;
 var uploadImage = registraion.uploadImage;
+var addBooksSchema = registraion.addBooksSchema;
 
 // Middlewares
 var storage = multer.diskStorage({
@@ -88,7 +89,6 @@ router.post("/login", (req, res) => {
         if (!user) return res.status(401).send({ msg: 'the email address' + req.body.email + 'is not registered' });
         if (user) {
             var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
-            console.log(passwordIsValid)
             if (!passwordIsValid) res.status(401).json({ message: 'not match password' });
             var token = jwt.sign({ id: user._id, email: user.email }, config.secret, {
                 expiresIn: 86400 // expires in 24 hours
@@ -100,7 +100,7 @@ router.post("/login", (req, res) => {
                 id: user._id,
                 status: 200
             }
-            res.status(200).send( sendToken )
+            res.status(200).send(sendToken)
         }
 
     }).catch(err => {
@@ -180,13 +180,12 @@ router.post('/forgot', (req, res) => {
 
         var time = new Date();
         registraionFrom.findOneAndUpdate({ 'email': req.body.email }, { $set: { 'time': time } }).then((result) => {
-            console.log('update data is', result);
             res.status(200).json({ Result: result });
         })
     })
 });
 
-// TODO: DKFJ;DSAKFDSK
+
 
 /*  >>>>>>>>>>>>>>>>>>>>>>>>>>>>> RESET PASSWORD API ....>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> */
 
@@ -258,64 +257,126 @@ router.post('/changePassword', auth, (req, res) => {
 
 /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< UPLOAD IMAGE API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 const fs = require('fs');
-router.post("/upload", upload.array('images', 1), auth ,async (req, res) => {
-  var mimetype = req.files[0].mimetype;
-   try{
+router.post("/upload", upload.array('images', 1), async (req, res) => {
+    var mimetype = req.files[0].mimetype;
+    try {
         let arr = [];
         let files = Object.keys(req.files);
         files.forEach(file => {
             arr.push(req.files[file].path);
-         
-       
         });
         var data = {
             url: arr,
-            email:req.decoded.email
+            email: req.decoded.email
         }
-        console.log(data,'data');
-     
-        var myData = new uploadImage(data);
-        await myData.save();
+
+        // var myData = new uploadImage(data);
+        // await myData.save();
         let filesToSend = arr.map(item => {
             return fs.readFileSync(path.resolve(path.join(__dirname, '../', item)), 'base64');
         });
-        res.status(200).json({ files: filesToSend  , mimetype : mimetype });
+        res.status(200).json({ files: filesToSend, mimetype: mimetype });
     } catch (e) {
         res.status(500).json({ error: e });
     }
-    
-
 });
+
+/* <<<<<<<<<<<<<<<<<<<<<<< EDIT PROFILE  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+
+router.put("/edit_profile", (req, res) => {
+    try {
+        var email = req.body.email;
+        var firstName = req.body.firstName;
+        var url = req.body.url;
+        uploadImage.findOneAndUpdate({ '_id': req.body._id }, { $set: { 'email': email, 'firstName': firstName, 'url': url } },
+            { new: true }).then((result) => {
+                res.status(200).json({ message: 'Saved successfully', result: result });
+            })
+    } catch (e) {
+        res.status(500).json({ error: e });
+    }
+})
+
+/* <<<<<<<<<<<<<<<<<<<<<<< ADD BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+
+router.post("/add_book", async (req, res) => {
+    try {
+        let data = {
+            book: req.body.book,
+            price: req.body.price,
+            description: req.body.description,
+            author: req.body.author
+        }
+        var myData = new addBooksSchema(data);
+        await myData.save();
+        res.status(200).json({ message: 'Saved successfully', data: myData });
+    } catch (e) {
+        res.status(500).json({ error: e });
+    }
+})
+
+/* <<<<<<<<<<<<<<<<<<<<<<< UPDATE BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+
+router.put("/update_book", (req, res) => {
+    try {
+        var book = req.body.book;
+        var author = req.body.author;
+        var price = req.body.price;
+        var description = req.body.description;
+
+        addBooksSchema.findOneAndUpdate({ '_id': req.body._id }, { $set: { 'book': book, 'price': price, 'description': description, 'author': author } },
+            { new: true }).then((result) => {
+                res.status(200).json({ message: 'Saved successfully', result: result });
+            })
+    } catch (e) {
+        res.status(500).json({ error: e });
+    }
+})
+
+/* <<<<<<<<<<<<<<<<<<<<<<< DELETE  BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+
+router.delete("/delete_book", (req, res) => {
+    try {
+        var _id = req.body._id;
+         var book = req.body.book;
+        // var author = req.body.author;
+        // var price = req.body.price;
+        // var description = req.body.description;
+        User.remove({ 'book': req.body.book }).then((result) => {
+            res.status(200).json({ message : 'deleted succesfully ', result:result});
+        })
+    } catch (e) {
+        res.status(500).json({ error: e });
+    }
+
+
+})
+
+
 
 
 app.get("/getName", (req, res) => {
-    console.log("new data get from data base");
     var userName = req.body.name;
     User.findOne({ 'firstName': userName }).then((result) => {
-        console.log('the result is ', result);
         res.send(result);
     })
 });
 
 app.put("/updateName", (req, res) => {
-    console.log("update query run>>>>>>>>");
     var firstName = req.body.firstName;
     var lastName = req.body.lastName;
     var name = req.body.name;
     User.findOneAndUpdate({ 'firstName': firstName }, { $set: { 'lastName': lastName, 'firstName': name } },
         { new: true }).then((result) => {
-            console.log('update data is', result);
-            res.send(result)
+            res.send('result')
         })
 
 })
 
 
 app.delete("/deleteName", (req, res) => {
-    console.log("data deleted from database");
     var firstName = req.body.firstName;
     User.remove({ 'firstName': firstName }).then((result) => {
-        console.log('delete data is ', result);
         res.send(result)
     })
 })
