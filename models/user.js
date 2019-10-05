@@ -8,11 +8,6 @@ var registrationSchema = new mongoose.Schema({
          required: true, 
          trim : true 
         },
-    // lastName: { 
-    //     type: String, 
-    //     required: true , 
-    //     trim: true
-    //  },
     email:{
         type: String, 
         required: true,
@@ -30,9 +25,9 @@ var registrationSchema = new mongoose.Schema({
         type: String, 
         required: true 
     },
-    otp:{ 
-        type: String, 
-       },
+    // otp:{ 
+    //     type: String, 
+    //    },
     time: { 
         type: String, 
         default: Date.now 
@@ -41,10 +36,7 @@ var registrationSchema = new mongoose.Schema({
         type: String, 
         // required: true 
     }
-    // url:{ 
-    //     type: Array, 
-    //     default: [] 
-    // }
+
 });
 
 var loginSchema = new mongoose.Schema({
