@@ -90,7 +90,7 @@ router.post("/login", (req, res) => {
         if (user) {
             var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
             if (!passwordIsValid) res.status(401).json({ message: 'not match password' });
-            var token = jwt.sign({ id: user._id, email: user.email }, config.secret, {
+            var token = jwt.sign({ id: user._id, email: user.email , firstName : user.firstName }, config.secret, {
                 expiresIn: 86400 // expires in 24 hours
             });
             var sendToken = {
@@ -257,7 +257,6 @@ router.post('/changePassword', auth, (req, res) => {
 /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ADMIN DETAILS API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
 router.get('/admin_details',auth,(req,res)=>{
-    console.log(req.decoded.email,'>>>>>>>>>>>>>>>>>>>>>>');
     try{
         registraionFrom.findOne({ email: req.decoded.email }).then((user, err) => {
              res.status(200).json({ message: 'data successfully get from database', data : user , status : 200 })
@@ -275,7 +274,9 @@ router.get('/admin_details',auth,(req,res)=>{
 /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< UPLOAD IMAGE API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 const fs = require('fs');
 router.post("/upload", upload.array('images', 1), auth, async (req, res) => {
-    var mimetype = req.files[0].mimetype;
+    // var mimetype = req.files[0].mimetype;
+    console.log(req.decoded,'first name ')
+ 
     try {
         let arr = [];
         let files = Object.keys(req.files);
@@ -284,15 +285,15 @@ router.post("/upload", upload.array('images', 1), auth, async (req, res) => {
         });
         var data = {
             url: arr,
-            email: req.decoded.email
+            email: req.decoded.email,
+            firstName : req.decoded.firstName
         }
-
          var myData = new uploadImage(data);
          await myData.save();
         let filesToSend = arr.map(item => {
             return fs.readFileSync(path.resolve(path.join(__dirname, '../', item)), 'base64');
         });
-        res.status(200).json({ files: filesToSend, mimetype: mimetype });
+        res.status(200).json({ files: filesToSend});
     } catch (e) {
         res.status(500).json({ error: e });
     }
@@ -300,13 +301,17 @@ router.post("/upload", upload.array('images', 1), auth, async (req, res) => {
 
 /* <<<<<<<<<<<<<<<<<<<<<<< EDIT PROFILE  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
-router.put("/edit_profile", (req, res) => {
+router.put("/edit_profile",  auth, (req, res) => {
+           console.log('edit profile working   .....');
+           console.log(req.body.email , '::::::::::::::::::::::::::::::::::');
+
     try {
         var email = req.body.email;
         var firstName = req.body.firstName;
-        var url = req.body.url;
-        uploadImage.findOneAndUpdate({ '_id': req.body._id }, { $set: { 'email': email, 'firstName': firstName, 'url': url } },
+        var images = req.body.images;
+        uploadImage.findOneAndUpdate({ 'email': req.body.email }, { $set: { 'firstName': firstName, 'url': images } },
             { new: true }).then((result) => {
+                console.log(result,'result  >>>>>>>>>>>>>>>>>>>>')
                 res.status(200).json({ message: 'Saved successfully', result: result ,statusCode: 200 });
             })
     } catch (e) {
@@ -334,36 +339,36 @@ router.post("/add_book", async (req, res) => {
 
 /* <<<<<<<<<<<<<<<<<<<<<<< UPDATE BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
-router.put("/update_book", (req, res) => {
-    try {
-        var book = req.body.book;
-        var author = req.body.author;
-        var price = req.body.price;
-        var description = req.body.description;
+// router.put("/update_book", (req, res) => {
+//     try {
+//         var book = req.body.book;
+//         var author = req.body.author;
+//         var price = req.body.price;
+//         var description = req.body.description;
 
-        addBooksSchema.findOneAndUpdate({ '_id': req.body._id }, { $set: { 'book': book, 'price': price, 'description': description, 'author': author } },
-            { new: true }).then((result) => {
-                res.status(200).json({ message: 'Saved successfully', result: result });
-            })
-    } catch (e) {
-        res.status(500).json({ error: e });
-    }
-})
+//         addBooksSchema.findOneAndUpdate({ '_id': req.body._id }, { $set: { 'book': book, 'price': price, 'description': description, 'author': author } },
+//             { new: true }).then((result) => {
+//                 res.status(200).json({ message: 'Saved successfully', result: result });
+//             })
+//     } catch (e) {
+//         res.status(500).json({ error: e });
+//     }
+// })
 
 /* <<<<<<<<<<<<<<<<<<<<<<< DELETE  BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
-router.delete("/delete_book", (req, res) => {
-    try {
-        var _id = req.body._id;
-        addBooksSchema.remove({ '_id': _id }).then((result) => {
-            res.status(200).json({ message: 'deleted succesfully ', result: result });
-        })
-    } catch (e) {
-        res.status(500).json({ error: e });
-    }
+// router.delete("/delete_book", (req, res) => {
+//     try {
+//         var _id = req.body._id;
+//         addBooksSchema.remove({ '_id': _id }).then((result) => {
+//             res.status(200).json({ message: 'deleted succesfully ', result: result });
+//         })
+//     } catch (e) {
+//         res.status(500).json({ error: e });
+//     }
 
 
-})
+// })
 
 
 
