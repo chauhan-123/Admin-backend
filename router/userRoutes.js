@@ -257,6 +257,7 @@ router.post('/changePassword', auth, (req, res) => {
 /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ADMIN DETAILS API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
 router.get('/admin_details',auth,(req,res)=>{
+    console.log(req.decoded.email,'::::::::::');
     try{
         registraionFrom.findOne({ email: req.decoded.email }).then((user, err) => {
              res.status(200).json({ message: 'data successfully get from database', data : user , status : 200 })
@@ -273,27 +274,40 @@ router.get('/admin_details',auth,(req,res)=>{
 
 /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< UPLOAD IMAGE API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 const fs = require('fs');
-router.post("/upload", upload.array('images', 1), auth, async (req, res) => {
+router.post("/upload", upload.array('images', 1), auth, (req, res) => {
+    // router.post("/upload", upload.array('images',1), auth , (req,res)=>{
     // var mimetype = req.files[0].mimetype;
-    console.log(req.decoded,'first name ')
- 
     try {
         let arr = [];
         let files = Object.keys(req.files);
         files.forEach(file => {
             arr.push(req.files[file].path);
         });
+
         var data = {
             url: arr,
-            email: req.decoded.email,
-            firstName : req.decoded.firstName
+            // email: req.decoded.email,
+            // firstName : req.decoded.firstName
         }
-         var myData = new uploadImage(data);
-         await myData.save();
+
         let filesToSend = arr.map(item => {
             return fs.readFileSync(path.resolve(path.join(__dirname, '../', item)), 'base64');
         });
-        res.status(200).json({ files: filesToSend});
+     
+        //  var myData = new uploadImage(data);
+        // await myData.save();
+        // var myData = new registraionFrom(data);
+        registraionFrom.findOneAndUpdate({ 'email': req.decoded.email }, { $set: { 'url': filesToSend } }).then((result) => {
+            // res.status(200).json({ Result: result });
+            // let filesToSend = arr.map(item => {
+            //     return fs.readFileSync(path.resolve(path.join(__dirname, '../', item)), 'base64');
+            // });
+            res.status(200).json({ files: filesToSend});
+        })
+        // let filesToSend = arr.map(item => {
+        //     return fs.readFileSync(path.resolve(path.join(__dirname, '../', item)), 'base64');
+        // });
+        / res.status(200).json({ files: filesToSend});
     } catch (e) {
         res.status(500).json({ error: e });
     }
@@ -302,17 +316,25 @@ router.post("/upload", upload.array('images', 1), auth, async (req, res) => {
 /* <<<<<<<<<<<<<<<<<<<<<<< EDIT PROFILE  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
 router.put("/edit_profile",  auth, (req, res) => {
-           console.log('edit profile working   .....');
-           console.log(req.body.email , '::::::::::::::::::::::::::::::::::');
+console.log(req.body,'>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
 
     try {
-        var email = req.body.email;
         var firstName = req.body.firstName;
         var images = req.body.images;
-        uploadImage.findOneAndUpdate({ 'email': req.body.email }, { $set: { 'firstName': firstName, 'url': images } },
+        registraionFrom.findOneAndUpdate({ 'email': req.decoded.email }, { $set: { 'firstName': firstName, 'url': images } },
             { new: true }).then((result) => {
-                console.log(result,'result  >>>>>>>>>>>>>>>>>>>>')
-                res.status(200).json({ message: 'Saved successfully', result: result ,statusCode: 200 });
+                console.log(result,'result')
+                let arr = [];
+                let files = Object.keys(req.files);
+                files.forEach(file => {
+                    arr.push(req.files[file].path);
+                });
+                let filesToSend = arr.map(item => {
+                    return fs.readFileSync(path.resolve(path.join(__dirname, '../', item)), 'base64');
+                });
+                res.status(200).json({ files: filesToSend, Result : result});
+
+                // res.status(200).json({ message: 'Saved successfully', result: result ,statusCode: 200 });
             })
     } catch (e) {
         res.status(500).json({ error: e });
