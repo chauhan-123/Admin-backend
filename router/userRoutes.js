@@ -10,7 +10,6 @@ const multer = require('multer');
 const mailFun = require('../utilities/mail')
 const path = require('path');
 var app = express();
-// const encodeData = require('../utilities/utilityfunctions');
 var registraion = require('../models/user');
 var registraionFrom = registraion.User;
 var uploadImage = registraion.uploadImage;
@@ -53,12 +52,6 @@ router.post("/registration", async (req, res) => {
             } else {
                 var body = req.body;
                 let password = await bcrypt.hash(req.body.password, 12);
-                var flag = false;
-                // let arr = [];
-                // let files = Object.keys(req.files);
-                // files.forEach(file => {
-                //     arr.push(req.files[file].path);
-                // });
                 // const token = await registraionFrom.generateAuthToken();
                 var data = {
                     firstName: body.firstName,
@@ -273,7 +266,9 @@ router.get('/admin_details',auth,(req,res)=>{
 
 /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< UPLOAD IMAGE API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 const fs = require('fs');
-router.post("/upload", upload.array('images', 1), auth, async (req, res) => {
+// router.post("/upload", upload.array('images', 1),async (req, res) => {
+router.post("/upload", upload.array('images', 1),(req, res) => {
+
     // var mimetype = req.files[0].mimetype;
     console.log(req.decoded,'first name ')
  
@@ -285,15 +280,21 @@ router.post("/upload", upload.array('images', 1), auth, async (req, res) => {
         });
         var data = {
             url: arr,
-            email: req.decoded.email,
-            firstName : req.decoded.firstName
+            // email: req.decoded.email,
+            // firstName : req.decoded.firstName
         }
-         var myData = new uploadImage(data);
-         await myData.save();
+        //  var myData = new uploadImage(data);
+        var myData = new registraionFrom(data);
+         console.log(myData, 'my data is running...');
+         registraionFrom.findOneAndUpdate({ email: req.body.email }, { $set: { url: myData } }).then((result) => {
+            // res.status(200).json({ message: 'you are login with new password with registered email.... ' })
+        })
+        //   myData.save();
+        //  await myData.save();
         let filesToSend = arr.map(item => {
             return fs.readFileSync(path.resolve(path.join(__dirname, '../', item)), 'base64');
         });
-        res.status(200).json({ files: filesToSend});
+        res.status(200).json({ message : ' image save to the database', data :data, files: filesToSend  });
     } catch (e) {
         res.status(500).json({ error: e });
     }

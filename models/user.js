@@ -5,12 +5,12 @@ mongoose.connect("mongodb://localhost:27017/node-user1", { useNewUrlParser: true
 var registrationSchema = new mongoose.Schema({
     firstName:{
          type: String, 
-         required: true, 
+        //  required: true, 
          trim : true 
         },
     email:{
         type: String, 
-        required: true,
+        // required: true,
         trim:true,
         unique:true
         },
@@ -19,27 +19,27 @@ var registrationSchema = new mongoose.Schema({
      },
     phone:{ 
         type: Number , 
-        required: true 
+        // required: true 
     },
     password:{ 
         type: String, 
-        required: true 
+        // required: true 
     },
     // otp:{ 
     //     type: String, 
     //    },
     time: { 
         type: String, 
-        default: Date.now 
+        // default: Date.now 
     },
     token:{ 
         type: String, 
         // required: true 
     },
-    // url:{ 
-    //     type: Array, 
-    //     default: [] 
-    // }
+    url:{ 
+        type: Array, 
+        default: [] 
+    }
 });
 
 var loginSchema = new mongoose.Schema({
