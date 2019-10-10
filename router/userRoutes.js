@@ -52,7 +52,6 @@ router.post("/registration", async (req, res) => {
             } else {
                 var body = req.body;
                 let password = await bcrypt.hash(req.body.password, 12);
-                // const token = await registraionFrom.generateAuthToken();
                 var data = {
                     firstName: body.firstName,
                     lastName: body.lastName,
@@ -60,7 +59,6 @@ router.post("/registration", async (req, res) => {
                     address: body.address,
                     phone: body.phone,
                     password: password,
-                    // url: arr
                 }
                 var myData = new registraionFrom(data);
                 await myData.save();
@@ -77,25 +75,23 @@ router.post("/registration", async (req, res) => {
 /*    >>>>>>>>>>>>>>>>>>>>>>>>>> LOGIN API FOR SIGNIN  >>>>>>>>>>>>> >>>>>>>>>>>>>>>>>>>>>            */
 
 router.post("/login", (req, res) => {
-    registraionFrom.findOne({ email: req.body.email }).then((user, err) => {
+    registraionFrom.findOne({ email: req.body.email }).select('-__v -_id').then((user, err) => {
         if (err) return res.status(401).send('not a registered user')
         if (!user) return res.status(401).send({ msg: 'the email address' + req.body.email + 'is not registered' });
         if (user) {
             var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
             if (!passwordIsValid) res.status(401).json({ message: 'not match password' });
-            var token = jwt.sign({ id: user._id, email: user.email , firstName : user.firstName }, config.secret, {
+            var token = jwt.sign({ id: user._id, email: user.email, firstName: user.firstName }, config.secret, {
                 expiresIn: 86400 // expires in 24 hours
             });
             var sendToken = {
                 token: token,
                 firstName: user.firstName,
                 email: user.email,
-                id: user._id,
                 status: 200
             }
-            res.status(200).send(sendToken)
+            res.status(200).send(sendToken);
         }
-
     }).catch(err => {
         console.log('error', err)
     })
@@ -116,11 +112,6 @@ router.post('/forgot', (req, res) => {
      let otp = otpGenerator.generate(6, { upperCase: false, specialChars: false });
      console.log(otp);
      */
-
-        // var token = jwt.sign({ email: user.email }, config.secret, {
-        //     expiresIn: 86400 // expires in 24 hours
-        // });
-
         var transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
@@ -128,14 +119,6 @@ router.post('/forgot', (req, res) => {
                 pass: 'Sumit@12345'
             }
         });
-        // var sendToken = {
-        //     token: token,
-        // firstName:user.firstName,
-        // email:user.email,
-        // id:user._id,
-        // status:200
-        // }
-
         var mailOptions = {
             from: 'sumitchauan111@gmail.com',
             to: req.body.email,
@@ -233,7 +216,6 @@ router.post('/changePassword', auth, (req, res) => {
             var confirmPassword = req.body.confirmPassword;
             if (password !== confirmPassword) {
                 return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
-
             } else {
                 let password2 = await bcrypt.hash(req.body.password, 12);
                 registraionFrom.findOneAndUpdate({ email: user.email }, { $set: { password: password2 } }).then((result) => {
@@ -243,35 +225,24 @@ router.post('/changePassword', auth, (req, res) => {
         } else {
             return res.status(500).send({ auth: false, message: 'Failed to authenticate token.' });
         }
-
     });
 })
 
 /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ADMIN DETAILS API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
-router.get('/admin_details',auth,(req,res)=>{
-    try{
+router.get('/admin_details', auth, (req, res) => {
+    try {
         registraionFrom.findOne({ email: req.decoded.email }).then((user, err) => {
-             res.status(200).json({ message: 'data successfully get from database', data : user , status : 200 })
-         })
-
-    }catch (e) {
+            res.status(200).json({ message: 'data successfully get from database', data: user, status: 200 })
+        })
+    } catch (e) {
         res.status(500).json({ error: e });
     }
 })
 
-
-
-
-
 /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< UPLOAD IMAGE API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 const fs = require('fs');
-// router.post("/upload", upload.array('images', 1),async (req, res) => {
-router.post("/upload", upload.array('images', 1),(req, res) => {
-
-    // var mimetype = req.files[0].mimetype;
-    console.log(req.decoded,'first name ')
- 
+router.post("/upload", upload.array('images', 1), auth, (req, res) => {
     try {
         let arr = [];
         let files = Object.keys(req.files);
@@ -280,21 +251,16 @@ router.post("/upload", upload.array('images', 1),(req, res) => {
         });
         var data = {
             url: arr,
-            // email: req.decoded.email,
-            // firstName : req.decoded.firstName
         }
-        //  var myData = new uploadImage(data);
-        var myData = new registraionFrom(data);
-         console.log(myData, 'my data is running...');
-         registraionFrom.findOneAndUpdate({ email: req.body.email }, { $set: { url: myData } }).then((result) => {
-            // res.status(200).json({ message: 'you are login with new password with registered email.... ' })
-        })
-        //   myData.save();
-        //  await myData.save();
+
         let filesToSend = arr.map(item => {
             return fs.readFileSync(path.resolve(path.join(__dirname, '../', item)), 'base64');
         });
-        res.status(200).json({ message : ' image save to the database', data :data, files: filesToSend  });
+        registraionFrom.findOneAndUpdate({ 'email': req.decoded.email }, { $set: { 'url': filesToSend } }).then((result) => {
+
+            res.status(200).json({ files: filesToSend });
+        })
+        res.status(200).json({ files: filesToSend });
     } catch (e) {
         res.status(500).json({ error: e });
     }
@@ -302,18 +268,14 @@ router.post("/upload", upload.array('images', 1),(req, res) => {
 
 /* <<<<<<<<<<<<<<<<<<<<<<< EDIT PROFILE  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
-router.put("/edit_profile",  auth, (req, res) => {
-           console.log('edit profile working   .....');
-           console.log(req.body.email , '::::::::::::::::::::::::::::::::::');
-
+router.put("/edit_profile", auth, (req, res) => {
     try {
-        var email = req.body.email;
         var firstName = req.body.firstName;
         var images = req.body.images;
-        uploadImage.findOneAndUpdate({ 'email': req.body.email }, { $set: { 'firstName': firstName, 'url': images } },
+        registraionFrom.findOneAndUpdate({ 'email': req.decoded.email }, { $set: { 'url': images, 'firstName': firstName } },
             { new: true }).then((result) => {
-                console.log(result,'result  >>>>>>>>>>>>>>>>>>>>')
-                res.status(200).json({ message: 'Saved successfully', result: result ,statusCode: 200 });
+                // res.status(200).json({ files: filesToSend, Result : result , statusCode: 200});
+                res.status(200).json({ message: 'Saved successfully', result: result, statusCode: 200 });
             })
     } catch (e) {
         res.status(500).json({ error: e });
@@ -340,39 +302,33 @@ router.post("/add_book", async (req, res) => {
 
 /* <<<<<<<<<<<<<<<<<<<<<<< UPDATE BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
-// router.put("/update_book", (req, res) => {
-//     try {
-//         var book = req.body.book;
-//         var author = req.body.author;
-//         var price = req.body.price;
-//         var description = req.body.description;
-
-//         addBooksSchema.findOneAndUpdate({ '_id': req.body._id }, { $set: { 'book': book, 'price': price, 'description': description, 'author': author } },
-//             { new: true }).then((result) => {
-//                 res.status(200).json({ message: 'Saved successfully', result: result });
-//             })
-//     } catch (e) {
-//         res.status(500).json({ error: e });
-//     }
-// })
+router.put("/update_book", (req, res) => {
+    try {
+        var book = req.body.book;
+        var author = req.body.author;
+        var price = req.body.price;
+        var description = req.body.description;
+        addBooksSchema.findOneAndUpdate({ '_id': req.body._id }, { $set: { 'book': book, 'price': price, 'description': description, 'author': author } },
+            { new: true }).then((result) => {
+                res.status(200).json({ message: 'Saved successfully', result: result });
+            })
+    } catch (e) {
+        res.status(500).json({ error: e });
+    }
+})
 
 /* <<<<<<<<<<<<<<<<<<<<<<< DELETE  BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
-// router.delete("/delete_book", (req, res) => {
-//     try {
-//         var _id = req.body._id;
-//         addBooksSchema.remove({ '_id': _id }).then((result) => {
-//             res.status(200).json({ message: 'deleted succesfully ', result: result });
-//         })
-//     } catch (e) {
-//         res.status(500).json({ error: e });
-//     }
-
-
-// })
-
-
-
+router.delete("/delete_book", (req, res) => {
+    try {
+        var _id = req.body._id;
+        addBooksSchema.remove({ '_id': _id }).then((result) => {
+            res.status(200).json({ message: 'deleted succesfully ', result: result });
+        })
+    } catch (e) {
+        res.status(500).json({ error: e });
+    }
+})
 
 app.get("/getName", (req, res) => {
     var userName = req.body.name;

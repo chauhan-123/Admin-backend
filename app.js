@@ -20,19 +20,19 @@ app.use(express.static(path.join(__dirname, '../Images/')))
 app.use(userrouter)
 
 app.use((req, res, next) => {
-     const error = new Error('Not Found');
-     error.status = 404;
-     next(error);
- });
- app.use((err, req, res, next) => {
-     res.status(err.status || 500).json({
-         error: {
-             msg: err.message
-         }
-     })
- });
+    const error = new Error('Not Found');
+    error.status = 404;
+    next(error);
+});
+app.use((err, req, res, next) => {
+    res.status(err.status || 500).json({
+        error: {
+            msg: err.message
+        }
+    })
+});
 
 // Server
-app.listen(port, ()=>{ 
-     console.log('srever is listening on port: '+port)
+app.listen(port, () => {
+    console.log('srever is listening on port: ' + port)
 })
