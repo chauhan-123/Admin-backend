@@ -84,7 +84,7 @@ router.post("/registration", async (req, res) => {
 /*    >>>>>>>>>>>>>>>>>>>>>>>>>> LOGIN API FOR SIGNIN  >>>>>>>>>>>>> >>>>>>>>>>>>>>>>>>>>>            */
 
 router.post("/login", (req, res) => {
-    registraionFrom.findOne({ email: req.body.email }).then((user, err) => {
+    registraionFrom.findOne({ email: req.body.email }).select('-__v -_id').then((user, err) => {
         if (err) return res.status(401).send('not a registered user')
         if (!user) return res.status(401).send({ msg: 'the email address' + req.body.email + 'is not registered' });
         if (user) {
@@ -97,10 +97,9 @@ router.post("/login", (req, res) => {
                 token: token,
                 firstName: user.firstName,
                 email: user.email,
-                id: user._id,
                 status: 200
             }
-            res.status(200).send(sendToken)
+            res.status(200).send(sendToken);
         }
 
     }).catch(err => {
@@ -124,9 +123,13 @@ router.post('/forgot', (req, res) => {
      console.log(otp);
      */
 
+
         // var token = jwt.sign({ email: user.email }, config.secret, {
         //     expiresIn: 86400 // expires in 24 hours
         // });
+
+
+
 
         var transporter = nodemailer.createTransport({
             service: 'gmail',
@@ -257,7 +260,6 @@ router.post('/changePassword', auth, (req, res) => {
 /* <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ADMIN DETAILS API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
 router.get('/admin_details',auth,(req,res)=>{
-    console.log(req.decoded.email,'::::::::::');
     try{
         registraionFrom.findOne({ email: req.decoded.email }).then((user, err) => {
              res.status(200).json({ message: 'data successfully get from database', data : user , status : 200 })
@@ -316,25 +318,17 @@ router.post("/upload", upload.array('images', 1), auth, (req, res) => {
 /* <<<<<<<<<<<<<<<<<<<<<<< EDIT PROFILE  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
 router.put("/edit_profile",  auth, (req, res) => {
-console.log(req.body,'>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>')
-
     try {
         var firstName = req.body.firstName;
         var images = req.body.images;
-        registraionFrom.findOneAndUpdate({ 'email': req.decoded.email }, { $set: { 'firstName': firstName, 'url': images } },
+        console.log(images, firstName, "1111111111")
+        registraionFrom.findOneAndUpdate({ 'email': req.decoded.email }, { $set: {  'url': images,'firstName': firstName } },
             { new: true }).then((result) => {
-                console.log(result,'result')
-                let arr = [];
-                let files = Object.keys(req.files);
-                files.forEach(file => {
-                    arr.push(req.files[file].path);
-                });
-                let filesToSend = arr.map(item => {
-                    return fs.readFileSync(path.resolve(path.join(__dirname, '../', item)), 'base64');
-                });
-                res.status(200).json({ files: filesToSend, Result : result});
+      console.log(result,'result')
 
-                // res.status(200).json({ message: 'Saved successfully', result: result ,statusCode: 200 });
+                // res.status(200).json({ files: filesToSend, Result : result , statusCode: 200});
+
+                 res.status(200).json({ message: 'Saved successfully', result: result ,statusCode: 200 });
             })
     } catch (e) {
         res.status(500).json({ error: e });
