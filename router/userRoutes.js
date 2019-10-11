@@ -40,37 +40,78 @@ const upload = multer({
     fileFilter
 });
 
-/*    >>>>>>>>>>>>>>>>>>>>>>> REGISTRATION  API  FOR SIGNUP  >>>>>>>>>>>>>>>>>>>>>            */
-router.post("/registration", async (req, res) => {
+/*    >>>>>>>>>>>>>>>>>>>>>>> REGISTRATION  API  FOR SIGNUP  >>>>>>>>>>>>>>>>>>>>>   */
+router.post("/registration", (req, res) => {
     try {
-        let user = await registraionFrom.findOne({ email: req.body.email });
-        var emailToValidate = req.body.email;
-        const emailRegexp = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-        if (emailRegexp.test(emailToValidate)) {
-            if (user) {
-                res.status(200).json({ message: 'your are alredy registered this email.......' })
-            } else {
-                var body = req.body;
-                let password = await bcrypt.hash(req.body.password, 12);
-                var data = {
-                    firstName: body.firstName,
-                    lastName: body.lastName,
-                    email: body.email,
-                    address: body.address,
-                    phone: body.phone,
-                    password: password,
+        registraionFrom.findOne({ email: req.body.email }, async (err, user) => {
+            var emailToValidate = req.body.email;
+            const emailRegexp = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+            if (emailRegexp.test(emailToValidate)) {
+                if (err) res.status(401).json({ message: 'something went wrong......' });
+                if (user) res.status(200).json({ message: 'your are alredy registered this email.......' })
+                else {
+                    var body = req.body;
+                    let password = await bcrypt.hash(req.body.password, 12);
+                    let otp = otpGenerator.generate(6, { upperCase: false, specialChars: false });
+                    console.log(otp);
+                    var data = {
+                        firstName: body.firstName,
+                        lastName: body.lastName,
+                        email: body.email,
+                        address: body.address,
+                        phone: body.phone,
+                        password: password,
+                        otp : otp
+                    }
+                    var myData = new registraionFrom(data);
+                    let mailsent = await sendMailAfterRegistration(myData, otp)
+                    myData.save().then(item => {
+                        res.status(200).json({ message: 'item saved to the database', result: item, statusCode: 200 })
+                    })
+                        .catch(err => {
+                            res.status(400).json({ message: 'unable send to the data', error: err });
+                        });
                 }
-                var myData = new registraionFrom(data);
-                await myData.save();
-                res.status(200).json({ message: 'Saved successfully' });
             }
-        } else {
-            res.status(400).json({ error: 'Provided email is not correct' });
-        }
+            else {
+                res.status(500).json({ message: 'wrong email??????????????', error: err })
+            }
+        })
     } catch (e) {
         res.status(500).json({ error: e });
     }
 });
+
+async function sendMailAfterRegistration(user, otp) {
+    link = `http://localhost:1111/account/login`
+    mailContent = `<h2>Good to see you ${user.firstName} ${user.phone}</h2>
+    <p>this is the otp thats verify the user <h1> ${user.otp}</h1></p>
+    <p>click on the link below to verify mail ${user.email}</p>
+  
+    <a href=${link}>VERIFY</a>`
+    return mailFun(user.email, 'Verify mail', mailContent)
+}
+
+// router.get('/account/login/:email', async (req, res) => {
+//     var user = await User.findOne({
+//         workemail: req.params.email
+//     })
+//     if (user.mailHash == req.query.code) {
+//         user.mailVerified = true;
+//         await User.findOneAndUpdate({email:user.workemail},{$set:{mailVerified:true}})
+//         res.json({
+//             error: false,
+//             msg: 'mail verified successfully'
+//         })
+//     } else {
+//         res.json({
+//             error: true,
+//             msg: 'mail not verified'
+//         })
+//     }
+// })
+
+
 
 /*    >>>>>>>>>>>>>>>>>>>>>>>>>> LOGIN API FOR SIGNIN  >>>>>>>>>>>>> >>>>>>>>>>>>>>>>>>>>>            */
 
@@ -82,7 +123,7 @@ router.post("/login", (req, res) => {
             var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
             if (!passwordIsValid) res.status(401).json({ message: 'not match password' });
             var token = jwt.sign({ id: user._id, email: user.email, firstName: user.firstName }, config.secret, {
-                expiresIn: 86400 // expires in 24 hours
+                expiresIn: 120 // expires in 24 hours
             });
             var sendToken = {
                 token: token,
@@ -97,10 +138,25 @@ router.post("/login", (req, res) => {
     })
 });
 
+/*  >>>>>>>>>>>>>>>>>>>>>>>>> VERIFY TOKEN API WHICH SEND THE ADMIN >>>>>>>>>>>>>>>>>>>>>>>>>>>>>> */
+
+router.get('/verify-otp',(req,res)=>{
+    console.log('verify otp is proper working ....')
+})
+
+
+
+
+
+
+
+
+
+
 
 /*  >>>>>>>>>>>>>>>>>>>>>>>>> FORGOT PASSWORD API >>>>>>>>>>>>>>>>>>>>>>>>>>>>>> */
 
-router.post('/forgot', (req, res) => {
+router.post('/forgot-password', (req, res) => {
     registraionFrom.findOne({ 'email': req.body.email }, (err, user) => {
         var Email = req.body.email;
         if (err) res.status(401).json({ message: 'not a valid email id' });
@@ -120,7 +176,7 @@ router.post('/forgot', (req, res) => {
             }
         });
         var mailOptions = {
-            from: 'sumitchauan111@gmail.com',
+            from:  'chauhan1995sumit@gmail.com',
             to: req.body.email,
             text: 'resend email',
             subject: 'Sending Email using Node.js',
@@ -158,14 +214,14 @@ router.post('/forgot', (req, res) => {
         registraionFrom.findOneAndUpdate({ 'email': req.body.email }, { $set: { 'time': time } }).then((result) => {
             res.status(200).json({ Result: result });
         })
-    })
+    });
 });
 
 
 
 /*  >>>>>>>>>>>>>>>>>>>>>>>>>>>>> RESET PASSWORD API ....>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> */
 
-router.post('/reset', (req, res) => {
+router.post('/reset-password', (req, res) => {
     registraionFrom.findOne({ 'email': req.body.email }, async (err, user) => {
         if (err) res.status(401).json({ message: 'not a valid otp' });
         if (!user) res.status(401).json({ message: 'not a valid email...' });
@@ -270,13 +326,15 @@ router.post("/upload", upload.array('images', 1), auth, (req, res) => {
 
 router.put("/edit_profile", auth, (req, res) => {
     try {
-        var firstName = req.body.firstName;
-        var images = req.body.images;
-        registraionFrom.findOneAndUpdate({ 'email': req.decoded.email }, { $set: { 'url': images, 'firstName': firstName } },
-            { new: true }).then((result) => {
-                // res.status(200).json({ files: filesToSend, Result : result , statusCode: 200});
-                res.status(200).json({ message: 'Saved successfully', result: result, statusCode: 200 });
-            })
+        registraionFrom.findOne({ 'email': req.decoded.email }, (err, user) => {
+            var userImage = user.url;
+            var firstName = req.body.firstName;
+            var images = req.body.images;
+            registraionFrom.findOneAndUpdate({ 'email': req.decoded.email }, { $set: { 'url': userImage, 'firstName': firstName } },
+                { new: true }).then((result) => {
+                    res.status(200).json({ message: 'Saved successfully', result: userImage, statusCode: 200 });
+                })
+        })
     } catch (e) {
         res.status(500).json({ error: e });
     }

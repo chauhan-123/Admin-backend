@@ -1,18 +1,24 @@
 var mongoose = require("mongoose");
 mongoose.Promise = global.Promise;
 mongoose.connect("mongodb://localhost:27017/node-user1", { useNewUrlParser: true });
-
+const validator = require('validator');
 var registrationSchema = new mongoose.Schema({
     firstName: {
         type: String,
         //  required: true, 
-        trim: true
+        trim: true,
+
     },
     email: {
         type: String,
         // required: true,
         trim: true,
-        unique: true
+        unique: true,
+        validate(value) {
+            if(!validator.isEmail(value)){
+                throw new Error('Invalid email')
+            }
+        }
     },
     address: {
         type: String
@@ -25,9 +31,9 @@ var registrationSchema = new mongoose.Schema({
         type: String,
         // required: true 
     },
-    // otp:{ 
-    //     type: String, 
-    //    },
+    otp:{ 
+        type: String, 
+       },
     time: {
         type: String,
         // default: Date.now 
@@ -39,7 +45,11 @@ var registrationSchema = new mongoose.Schema({
     url: {
         type: Array,
         default: []
-    }
+    },
+    mailVerified:{
+        type:Boolean,
+        default:false
+    },
 });
 
 var loginSchema = new mongoose.Schema({
