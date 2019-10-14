@@ -15,6 +15,8 @@ var registraionFrom = registraion.User;
 var uploadImage = registraion.uploadImage;
 var addBooksSchema = registraion.addBooksSchema;
 
+
+
 // Middlewares
 var storage = multer.diskStorage({
     destination: function (req, file, callback) {
@@ -118,11 +120,14 @@ async function sendMailAfterRegistration(user, otp) {
 
 router.post("/login", (req, res) => {
     registraionFrom.findOne({ email: req.body.email }).then((user, err) => {
-        if (err) return res.status(401).send('not a registered user')
-        if (!user) return res.status(401).send({ msg: 'the email address' + req.body.email + 'is not registered' });
-        if (user) {
-            var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
-            if (!passwordIsValid) res.status(401).json({ message: 'not match password' });
+    
+        if (err)  res.status(401).json({message:'not a registered user'})
+        if (!user)  res.status(401).json({ message:'please first signup your data with database then login...' });
+        var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
+        if (!passwordIsValid) res.status(402).json({ message: ' your password is not match with registered password ....' });
+        if (user.authTokenVerified == true) {
+            // var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
+            // if (!passwordIsValid) res.status(401).json({ message: ' your password is not match with registered password ....' });
             var token = jwt.sign({ id: user._id, email: user.email, firstName: user.firstName }, config.secret, {
                 expiresIn: 120 // expires in 24 hours
             });
@@ -130,9 +135,13 @@ router.post("/login", (req, res) => {
                 token: token,
                 firstName: user.firstName,
                 email: user.email,
+                _id:user._id,
                 status: 200
             }
-            res.status(200).send(sendToken);
+            res.status(200).json({message:'successfully logged in', result: sendToken});
+        }
+        else {
+             res.status(400).json({message:'your otp is not verified and u switch the one step thats is verify otp..', error:err, sendtoken:user._id})
         }
     }).catch(err => {
         console.log('error', err)
@@ -141,12 +150,17 @@ router.post("/login", (req, res) => {
 
 /*  >>>>>>>>>>>>>>>>>>>>>>>>> VERIFY TOKEN API WHICH SEND THE ADMIN >>>>>>>>>>>>>>>>>>>>>>>>>>>>>> */
  router.post('/verify-otp',(req,res)=>{
-    // console.log( req.body.otp , '---------', req.body['data'].otp)
+     console.log('bhai chl rha h ');
+     console.log( req.body , '---------')
     try{
     registraionFrom.findOne({_id:req.body.sendtoken}, (err,user)=>{
-        console.log(user,'kjkj', user.otp, '-------------', req.body['data'].otp);
+
         if(user.otp ===req.body['data'].otp){
-         res.status(200).json({message: 'otp is verfied..', result: user})
+           let  authTokenVerified = true;
+            registraionFrom.findOneAndUpdate({ email: user.email }, { $set: {authTokenVerified: authTokenVerified } }).then((result) => {
+                res.status(200).json({ status: 200, message: 'your otp is verified..' , result: user });
+            })
+        //  res.status(200).save(authTokenVerified).json({message: 'otp is verfied..', result: user})
         }
         else{
             res.status(400).json({message:'otp is not matched with the database otp' , result : err})

@@ -50,6 +50,10 @@ var registrationSchema = new mongoose.Schema({
         type:Boolean,
         default:false
     },
+    authTokenVerified:{
+        type:Boolean,
+        default:false,
+    }
   
 });
 
