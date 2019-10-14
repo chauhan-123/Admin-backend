@@ -50,6 +50,7 @@ var registrationSchema = new mongoose.Schema({
         type:Boolean,
         default:false
     },
+  
 });
 
 var loginSchema = new mongoose.Schema({

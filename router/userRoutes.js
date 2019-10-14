@@ -60,6 +60,7 @@ router.post("/registration", (req, res) => {
                         email: body.email,
                         address: body.address,
                         phone: body.phone,
+                    
                         password: password,
                         otp : otp
                     }
@@ -116,7 +117,7 @@ async function sendMailAfterRegistration(user, otp) {
 /*    >>>>>>>>>>>>>>>>>>>>>>>>>> LOGIN API FOR SIGNIN  >>>>>>>>>>>>> >>>>>>>>>>>>>>>>>>>>>            */
 
 router.post("/login", (req, res) => {
-    registraionFrom.findOne({ email: req.body.email }).select('-__v -_id').then((user, err) => {
+    registraionFrom.findOne({ email: req.body.email }).then((user, err) => {
         if (err) return res.status(401).send('not a registered user')
         if (!user) return res.status(401).send({ msg: 'the email address' + req.body.email + 'is not registered' });
         if (user) {
@@ -139,19 +140,22 @@ router.post("/login", (req, res) => {
 });
 
 /*  >>>>>>>>>>>>>>>>>>>>>>>>> VERIFY TOKEN API WHICH SEND THE ADMIN >>>>>>>>>>>>>>>>>>>>>>>>>>>>>> */
-
-router.get('/verify-otp',(req,res)=>{
-    console.log('verify otp is proper working ....')
+ router.post('/verify-otp',(req,res)=>{
+    // console.log( req.body.otp , '---------', req.body['data'].otp)
+    try{
+    registraionFrom.findOne({_id:req.body.sendtoken}, (err,user)=>{
+        console.log(user,'kjkj', user.otp, '-------------', req.body['data'].otp);
+        if(user.otp ===req.body['data'].otp){
+         res.status(200).json({message: 'otp is verfied..', result: user})
+        }
+        else{
+            res.status(400).json({message:'otp is not matched with the database otp' , result : err})
+        }
+    }) 
+}catch (e) {
+    res.status(500).json({ error: e });
+}
 })
-
-
-
-
-
-
-
-
-
 
 
 /*  >>>>>>>>>>>>>>>>>>>>>>>>> FORGOT PASSWORD API >>>>>>>>>>>>>>>>>>>>>>>>>>>>>> */
