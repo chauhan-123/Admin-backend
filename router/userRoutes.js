@@ -50,7 +50,7 @@ router.post("/registration", (req, res) => {
             const emailRegexp = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
             if (emailRegexp.test(emailToValidate)) {
                 if (err) res.status(401).json({ message: 'something went wrong......' });
-                if (user) res.status(200).json({ message: 'your are alredy registered this email.......' })
+                if (user) res.status(400).json({ message: 'your are alredy registered this email.......' , status : '400' })
                 else {
                     var body = req.body;
                     let password = await bcrypt.hash(req.body.password, 12);
@@ -120,16 +120,18 @@ async function sendMailAfterRegistration(user, otp) {
 
 router.post("/login", (req, res) => {
     registraionFrom.findOne({ email: req.body.email }).then((user, err) => {
-    
+        console.log(user , '>>>>>>>>>>>>>', req.body.email);
         if (err)  res.status(401).json({message:'not a registered user'})
+        // if(!user.email) res.status(404).json({message:'email is not '})
         if (!user)  res.status(401).json({ message:'please first signup your data with database then login...' });
         var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
         if (!passwordIsValid) res.status(402).json({ message: ' your password is not match with registered password ....' });
+        // if(req.body.email != user.email) res.status(404).json({message:'your email is not correct ...'})
         if (user.authTokenVerified == true) {
             // var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
             // if (!passwordIsValid) res.status(401).json({ message: ' your password is not match with registered password ....' });
             var token = jwt.sign({ id: user._id, email: user.email, firstName: user.firstName }, config.secret, {
-                expiresIn: 120 // expires in 24 hours
+                expiresIn: 86400 // expires in 24 hours
             });
             var sendToken = {
                 token: token,
@@ -148,14 +150,13 @@ router.post("/login", (req, res) => {
     })
 });
 
-/*  >>>>>>>>>>>>>>>>>>>>>>>>> VERIFY TOKEN API WHICH SEND THE ADMIN >>>>>>>>>>>>>>>>>>>>>>>>>>>>>> */
+/*  >>>>>>>>>>>>>>>>>>>>>>>>> VERIFY OTP API WHICH SEND THE ADMIN >>>>>>>>>>>>>>>>>>>>>>>>>>>>>> */
  router.post('/verify-otp',(req,res)=>{
-     console.log('bhai chl rha h ');
+
      console.log( req.body , '---------')
     try{
     registraionFrom.findOne({_id:req.body.sendtoken}, (err,user)=>{
-
-        if(user.otp ===req.body['data'].otp){
+            if(user.otp ===req.body['data'].otp){
            let  authTokenVerified = true;
             registraionFrom.findOneAndUpdate({ email: user.email }, { $set: {authTokenVerified: authTokenVerified } }).then((result) => {
                 res.status(200).json({ status: 200, message: 'your otp is verified..' , result: user });
@@ -178,7 +179,7 @@ router.post('/forgot-password', (req, res) => {
     registraionFrom.findOne({ 'email': req.body.email }, (err, user) => {
         var Email = req.body.email;
         if (err) res.status(401).json({ message: 'not a valid email id' });
-        if (!user) res.status(401).json({ message: 'your email id is not registered with database..' });
+        if (!user)  return res.status(401).json({ message: 'email id is not registered ' });
         if (user) {
             res.status(200).json({ password: user.password });
         }
@@ -258,7 +259,7 @@ router.post('/reset-password', (req, res) => {
         var diff = (time.getTime() - user.time) / 1000;
         let d = diff / 60;
         var timeDiff = Math.round(d);
-        if (timeDiff >= 400) {
+        if (timeDiff >= 500) { // thats is 5 minute..
             res.status(500).json({ message: 'your token is expired....' })
         } else {
             var password = req.body.password;
