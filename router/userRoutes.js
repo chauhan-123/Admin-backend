@@ -50,26 +50,25 @@ router.post("/registration", (req, res) => {
             const emailRegexp = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
             if (emailRegexp.test(emailToValidate)) {
                 if (err) res.status(401).json({ message: 'something went wrong......' });
-                if (user) res.status(400).json({ message: 'your are alredy registered this email.......' , status : '400' })
+                if (user) res.status(400).json({ message: 'your are alredy registered this email.......'  })
                 else {
                     var body = req.body;
                     let password = await bcrypt.hash(req.body.password, 12);
                     let otp = otpGenerator.generate(6, { upperCase: false, specialChars: false });
-                    console.log(otp);
+
                     var data = {
                         firstName: body.firstName,
                         lastName: body.lastName,
                         email: body.email,
                         address: body.address,
                         phone: body.phone,
-                    
                         password: password,
                         otp : otp
                     }
                     var myData = new registraionFrom(data);
                     let mailsent = await sendMailAfterRegistration(myData, otp)
                     myData.save().then(item => {
-                        res.status(200).json({ message: 'item saved to the database', result: item, statusCode: 200 })
+                        res.status(200).json({ message: 'item saved to the database', result: item})
                     })
                         .catch(err => {
                             res.status(400).json({ message: 'unable send to the data', error: err });
@@ -120,14 +119,14 @@ async function sendMailAfterRegistration(user, otp) {
 
 router.post("/login", (req, res) => {
     registraionFrom.findOne({ email: req.body.email }).then((user, err) => {
-        console.log(user , '>>>>>>>>>>>>>', req.body.email);
+    
         if (err)  res.status(401).json({message:'not a registered user'})
         // if(!user.email) res.status(404).json({message:'email is not '})
-        if (!user)  res.status(401).json({ message:'please first signup your data with database then login...' });
+        if (!user)  res.status(401).json({ message:'first signup or email is not valid' });
         var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
         if (!passwordIsValid) res.status(402).json({ message: ' your password is not match with registered password ....' });
         // if(req.body.email != user.email) res.status(404).json({message:'your email is not correct ...'})
-        if (user.authTokenVerified == true) {
+        if (user.authOtpVerified == true) {
             // var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
             // if (!passwordIsValid) res.status(401).json({ message: ' your password is not match with registered password ....' });
             var token = jwt.sign({ id: user._id, email: user.email, firstName: user.firstName }, config.secret, {
@@ -152,16 +151,19 @@ router.post("/login", (req, res) => {
 
 /*  >>>>>>>>>>>>>>>>>>>>>>>>> VERIFY OTP API WHICH SEND THE ADMIN >>>>>>>>>>>>>>>>>>>>>>>>>>>>>> */
  router.post('/verify-otp',(req,res)=>{
-
-     console.log( req.body , '---------')
     try{
     registraionFrom.findOne({_id:req.body.sendtoken}, (err,user)=>{
             if(user.otp ===req.body['data'].otp){
-           let  authTokenVerified = true;
-            registraionFrom.findOneAndUpdate({ email: user.email }, { $set: {authTokenVerified: authTokenVerified } }).then((result) => {
+           let  authOtpVerified = true;
+            registraionFrom.findOneAndUpdate({ email: user.email }, { $set: {authOtpVerified: authOtpVerified } }).then((result) => {
+                // let data ={
+                //     res:res.statusCode,
+                //     result:res.user,
+                //     message: 'your otp is verified..' 
+                // }
+                // res.send(data);
                 res.status(200).json({ status: 200, message: 'your otp is verified..' , result: user });
             })
-        //  res.status(200).save(authTokenVerified).json({message: 'otp is verfied..', result: user})
         }
         else{
             res.status(400).json({message:'otp is not matched with the database otp' , result : err})
@@ -177,16 +179,15 @@ router.post("/login", (req, res) => {
 
 router.post('/forgot-password', (req, res) => {
     registraionFrom.findOne({ 'email': req.body.email }, (err, user) => {
+        console.log(user ,'>>>>>>>>')
         var Email = req.body.email;
+        var token = jwt.sign({ id: user._id, email: user.email, firstName: user.firstName }, config.secret, {
+            expiresIn: 86400 // expires in 24 hours
+        });
+        console.log(token ,'>>>>')
         if (err) res.status(401).json({ message: 'not a valid email id' });
-        if (!user)  return res.status(401).json({ message: 'email id is not registered ' });
+        if (!user) res.status(401).json({ message: 'email id is not registered ' });
         if (user) {
-            res.status(200).json({ password: user.password });
-        }
-        /* This code generate the otp
-     let otp = otpGenerator.generate(6, { upperCase: false, specialChars: false });
-     console.log(otp);
-     */
         var transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
@@ -199,14 +200,14 @@ router.post('/forgot-password', (req, res) => {
             to: req.body.email,
             text: 'resend email',
             subject: 'Sending Email using Node.js',
-            // html: `<p>Click <a href="http://localhost:1111/account/reset-password?token=${token}">sendToken=${token}</a> to reset your password</p>`
+              html: `<p>Click <a href="http://localhost:1111/account/reset-password?token=${token}">sendToken=${token}</a> to reset your password</p>`
             // text: OTP,
             //html: '<p>Click</p> <a href="http://localhost:1111/account/forgot-password?email=${email}" > here</a> '
             // from: 'sumitchauan111@gmail.com',
             // to: req.body.email,
             // subject: 'Sending Email using Node.js',
             // text: otp
-            html: `<p>Click <a href="http://localhost:1111/account/reset-password?email=${Email}">sendEmail</a> to reset your password</p>`
+            // html: `<p>Click <a href="http://localhost:1111/account/reset-password?email=${Email}">sendEmail</a> to reset your password</p>`
         };
         transporter.sendMail(mailOptions, function (error, info) {
             if (error) {
@@ -221,18 +222,20 @@ router.post('/forgot-password', (req, res) => {
         // var time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
         // var dateTime = time;
         // const now = new Date();
-        // console.log(now);
+     
         // const minute = now.getTime();
         // const time = minute/1000;
         // 1 hour
         // const minute = now.getMilliseconds();
-        // console.log(minute);
+     
         // var time = moment().format('YYYY-MM-DD HH:mm:ss');
 
         var time = new Date();
         registraionFrom.findOneAndUpdate({ 'email': req.body.email }, { $set: { 'time': time } }).then((result) => {
-            res.status(200).json({ Result: result });
-        })
+            res.status(200).json({message:'Reset pasword link send to your email..' , result : user , statusCode: 200 });
+        }).catch(e => res.status(500).json({ error: e }))
+
+    }
     });
 });
 
@@ -245,6 +248,27 @@ router.post('/reset-password', (req, res) => {
         if (err) res.status(401).json({ message: 'not a valid otp' });
         if (!user) res.status(401).json({ message: 'not a valid email...' });
 
+        if(user.authTokenVerified === true){
+            var time = new Date();
+            var diff = (time.getTime() - user.time) / 1000;
+            let d = diff / 60;
+            var timeDiff = Math.round(d);
+            if (timeDiff >= 100) { // thats is 5 minute..
+                res.status(500).json({ message: 'your token is expired....' })
+            } else {
+                var password = req.body.password;
+                var confirmPassword = req.body.confirmPassword;
+                if (password !== confirmPassword) {
+                    res.status(400).json({ message: 'password not match with confirm password' });
+                } else {
+                    let password2 = await bcrypt.hash(req.body.password, 12);
+                    registraionFrom.findOneAndUpdate({ email: user.email }, { $set: { password: password2 , authTokenVerified: false } }).then((result) => {
+                        res.status(200).json({ message: 'you are login with new password with registered email.... ' , statusCode :'200' })
+                    })
+                }
+            }
+        }
+
         /*
                   if(user.otp == req.body.otp){     <....this code generate the otp time and checking and validate the otp...>
                 var start_date = moment(user.time, 'YYYY-MM-DD HH:mm:ss'); 
@@ -252,27 +276,10 @@ router.post('/reset-password', (req, res) => {
                 var end_date = moment(timePresent, 'YYYY-MM-DD HH:mm:ss');
                 var duration = moment.duration(end_date.diff(start_date));
                 var timeDi = duration.asMinutes(); 
-                console.log(timeDi,'???');
+              
                 var timeDiff = Math.round(timeDi);
         */
-        var time = new Date();
-        var diff = (time.getTime() - user.time) / 1000;
-        let d = diff / 60;
-        var timeDiff = Math.round(d);
-        if (timeDiff >= 500) { // thats is 5 minute..
-            res.status(500).json({ message: 'your token is expired....' })
-        } else {
-            var password = req.body.password;
-            var confirmPassword = req.body.confirmPassword;
-            if (password !== confirmPassword) {
-                res.status(400).json({ message: 'password not match with confirm password' });
-            } else {
-                let password2 = await bcrypt.hash(req.body.password, 12);
-                registraionFrom.findOneAndUpdate({ email: user.email }, { $set: { password: password2 } }).then((result) => {
-                    res.status(200).json({ message: 'you are login with new password with registered email.... ' })
-                })
-            }
-        }
+      
         //   }
         //   else {
         //       res.send('wrong otp...')

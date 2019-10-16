@@ -3,7 +3,7 @@ const smtpTransport =require('nodemailer-smtp-transport') ;
 // const sendmail=( reciever, subject, message ) => {
     const sendmail=( reciever, subject, message ) => {
 
-        console.log("amil options",reciever,subject,message);
+     
     return new Promise((resolve,reject)=>{
 
     reciever = reciever.toString(); 
@@ -48,7 +48,7 @@ const smtpTransport =require('nodemailer-smtp-transport') ;
     }
   
     smtpTranspo.sendMail(mailOptions, function(error, response) {
-         // console.log(error,'+++++++++',response)
+  
         smtpTranspo.close();
         if(!error){
               resolve(true)

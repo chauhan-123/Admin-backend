@@ -5,13 +5,13 @@ const validator = require('validator');
 var registrationSchema = new mongoose.Schema({
     firstName: {
         type: String,
-        //  required: true, 
+         required: true, 
         trim: true,
 
     },
     email: {
         type: String,
-        // required: true,
+        required: true,
         trim: true,
         unique: true,
         validate(value) {
@@ -25,22 +25,24 @@ var registrationSchema = new mongoose.Schema({
     },
     phone: {
         type: Number,
-        // required: true 
+        required: true 
     },
     password: {
         type: String,
-        // required: true 
+        required: true, 
+         min:8,
+         max:20
     },
     otp:{ 
         type: String, 
        },
     time: {
-        type: String,
-        // default: Date.now 
+        type: Date,
+        default: Date.now 
     },
     token: {
         type: String,
-        // required: true 
+        // required: true  
     },
     url: {
         type: Array,
@@ -50,9 +52,13 @@ var registrationSchema = new mongoose.Schema({
         type:Boolean,
         default:false
     },
-    authTokenVerified:{
+    authOtpVerified:{
         type:Boolean,
         default:false,
+    },
+    authTokenVerified :{
+        type:Boolean,
+        default:true
     }
   
 });

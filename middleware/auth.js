@@ -2,6 +2,8 @@ const jwt = require('jsonwebtoken')
 const config = require('../../model/config');
 
 let auth = (req, res, next) => {
+  console.log(req.headers.referer)
+
   let token = req.headers['authorization']; // Express headers are auto converted to lowercase
   
   if (token.startsWith('Bearer ')) {
