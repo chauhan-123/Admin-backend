@@ -48,10 +48,10 @@ var registrationSchema = new mongoose.Schema({
         type: Array,
         default: []
     },
-    mailVerified:{
-        type:Boolean,
-        default:false
-    },
+    // mailVerified:{
+    //     type:Boolean,
+    //     default:false
+    // },
     authOtpVerified:{
         type:Boolean,
         default:false,
