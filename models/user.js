@@ -91,7 +91,7 @@ var uploadImageSchema = new mongoose.Schema({
 })
 
 var addBooksSchema = new mongoose.Schema({
-    book: {
+    name: {
         type: String
     },
     author: {
@@ -102,6 +102,10 @@ var addBooksSchema = new mongoose.Schema({
     },
     description: {
         type: String
+    },
+    image :{
+        type:Array,
+        default:[]
     }
 })
 

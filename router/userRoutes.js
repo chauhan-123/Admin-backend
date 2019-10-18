@@ -130,7 +130,7 @@ router.post("/login", (req, res) => {
             // var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
             // if (!passwordIsValid) res.status(401).json({ message: ' your password is not match with registered password ....' });
             var token = jwt.sign({ id: user._id, email: user.email, firstName: user.firstName }, config.secret, {
-                expiresIn: 60 // expires in 24 hours
+                expiresIn: 86400 // expires in 24 hours
             });
             var sendToken = {
                 token: token,
@@ -384,10 +384,11 @@ router.put("/edit_profile", auth, (req, res) => {
 
 /* <<<<<<<<<<<<<<<<<<<<<<< ADD BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
-router.post("/add_book", async (req, res) => {
+router.post("/add_book", auth , async (req, res) => {
+    console.log(req.body,'=========', req.decoded)
     try {
         let data = {
-            book: req.body.book,
+            name: req.body.name,
             price: req.body.price,
             description: req.body.description,
             author: req.body.author
@@ -399,6 +400,19 @@ router.post("/add_book", async (req, res) => {
         res.status(500).json({ statusCode: 500, error: e });
     }
 })
+
+/* <<<<<<<<<<<<<<<<<<<<<<< GET BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+
+ router.get("/get_book", (req,res)=>{
+     try{
+     addBooksSchema.find((err,user)=>{
+      res.status(200).json({statusCode: 200 , message: 'data get successfully' , result : user } )
+     })
+    } catch(e){
+        res.status(400).json({statusCode:400 , error: e})
+    }
+ })
+
 
 /* <<<<<<<<<<<<<<<<<<<<<<< UPDATE BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
