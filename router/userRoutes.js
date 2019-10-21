@@ -394,8 +394,6 @@ router.post("/add_book", auth , (req, res) => {
             author: req.body.author,
             images : req.body.images
         }
-        console.log(data);
-     
         var myData =  new addBooksSchema(data);
       myData.save();
         res.status(200).json({ statusCode: 200, message: 'Saved successfully', data: myData  });
@@ -444,16 +442,43 @@ router.post("/add_book", auth , (req, res) => {
 
 /* <<<<<<<<<<<<<<<<<<<<<<< GET BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
- router.get("/get_book", (req,res)=>{
-     try{
-           
-     addBooksSchema.find((err,user)=>{
-      res.status(200).json({statusCode: 200 , message: 'data get successfully' , result : user} )
-     })
-    } catch(e){
-        res.status(400).json({statusCode:400 , error: e})
+
+
+
+ router.get("/get_book", async (req,res)=>{
+     console.log(JSON.stringify(req.query));
+     
+
+    //  if(req.query.sortBy && req.query.OrderBy){
+    //     sort[req.query.sortBy]   = req.query.OrderBy === 'desc' ? -1 : 1
+    // }
+     
+    addBooksSchema.find((err,count)=>{
+    var pageOptions = {
+        page: parseInt(req.query.page) || 0,
+        limit: parseInt(req.query.limit) || 10
     }
- })
+    
+    addBooksSchema.find()
+      
+        .skip(pageOptions.page*pageOptions.limit)
+        .limit(pageOptions.limit)
+        .exec(function (err, books) {
+            if(books) {
+                res.status(200).json({result: books , 'total': count ,'message': 'books data get successfully.. '});
+            }
+            if(err) { res.status(500).json(err) };
+  
+        })
+        // try {
+        //     let books = await addBooksSchema.find().limit(+req.query.limit).skip(+req.query.page);
+        //     res.status(200).json({result :books})
+        // } catch(e) {
+        //     res.status(500).json({ error: e.message});
+        // }
+    });
+    })
+
 
 
 /* <<<<<<<<<<<<<<<<<<<<<<< UPDATE BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
