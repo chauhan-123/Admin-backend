@@ -384,29 +384,71 @@ router.put("/edit_profile", auth, (req, res) => {
 
 /* <<<<<<<<<<<<<<<<<<<<<<< ADD BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
-router.post("/add_book", auth , async (req, res) => {
-    console.log(req.body,'=========', req.decoded)
+router.post("/add_book", auth , (req, res) => {
+    console.log(req.body,'=========')
     try {
         let data = {
             name: req.body.name,
             price: req.body.price,
             description: req.body.description,
-            author: req.body.author
+            author: req.body.author,
+            images : req.body.images
         }
-        var myData = new addBooksSchema(data);
-        await myData.save();
-        res.status(200).json({ statusCode: 200, message: 'Saved successfully', data: myData });
+        console.log(data);
+     
+        var myData =  new addBooksSchema(data);
+      myData.save();
+        res.status(200).json({ statusCode: 200, message: 'Saved successfully', data: myData  });
+    } catch (e) {
+        // res.status(500).json({ statusCode: 500, error: e });
+    }
+})
+
+
+/* <<<<<<<<<<<<<<<<<<<<<<< UPLOAD IMAGE  API FOR BOOK FOR  ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+
+// const fs = require('fs');
+ router.post("/upload_image", upload.array('images', 1), auth, (req, res) => {
+    console.log(req.decoded.id,'>>>>>>>>>>')
+    try {
+        let arr = [];
+        let files = Object.keys(req.files);
+        files.forEach(file => {
+            arr.push(req.files[file].path);
+        });
+        var data = {
+            url: arr,
+        }
+
+        let filesToSend = arr.map(item => {
+            return fs.readFileSync(path.resolve(path.join(__dirname, '../', item)), 'base64');
+        });
+        
+        var myData = new uploadImage(filesToSend);
+        myData.save(myData);
+        
+        // addBooksSchema.findOneAndUpdate({ 'email': req.decoded.email }, { $set: { 'images': filesToSend } }).then((result) => {
+
+        //     res.status(200).json({ statusCode: 200, files: filesToSend });
+        // })
+        res.status(200).json({ statusCode: 200, files: filesToSend });
     } catch (e) {
         res.status(500).json({ statusCode: 500, error: e });
     }
-})
+});
+
+
+
+
+
 
 /* <<<<<<<<<<<<<<<<<<<<<<< GET BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
  router.get("/get_book", (req,res)=>{
      try{
+           
      addBooksSchema.find((err,user)=>{
-      res.status(200).json({statusCode: 200 , message: 'data get successfully' , result : user } )
+      res.status(200).json({statusCode: 200 , message: 'data get successfully' , result : user} )
      })
     } catch(e){
         res.status(400).json({statusCode:400 , error: e})

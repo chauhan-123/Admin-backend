@@ -82,12 +82,12 @@ var uploadImageSchema = new mongoose.Schema({
         type: Array,
         default: []
     },
-    email: {
-        type: String
-    },
-    firstName: {
-        type: String
-    }
+    // email: {
+    //     type: String
+    // },
+    // firstName: {
+    //     type: String
+    // }
 })
 
 var addBooksSchema = new mongoose.Schema({
@@ -103,7 +103,7 @@ var addBooksSchema = new mongoose.Schema({
     description: {
         type: String
     },
-    image :{
+    images :{
         type:Array,
         default:[]
     }
