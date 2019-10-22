@@ -384,19 +384,19 @@ router.put("/edit_profile", auth, (req, res) => {
 
 /* <<<<<<<<<<<<<<<<<<<<<<< ADD BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
-router.post("/add_book", auth , (req, res) => {
-    console.log(req.body,'=========')
+router.post("/add_book", auth, (req, res) => {
+    console.log(req.body, '=========')
     try {
         let data = {
             name: req.body.name,
             price: req.body.price,
             description: req.body.description,
             author: req.body.author,
-            images : req.body.images
+            images: req.body.images
         }
-        var myData =  new addBooksSchema(data);
-      myData.save();
-        res.status(200).json({ statusCode: 200, message: 'Saved successfully', data: myData  });
+        var myData = new addBooksSchema(data);
+        myData.save();
+        res.status(200).json({ statusCode: 200, message: 'Saved successfully', data: myData });
     } catch (e) {
         // res.status(500).json({ statusCode: 500, error: e });
     }
@@ -406,8 +406,8 @@ router.post("/add_book", auth , (req, res) => {
 /* <<<<<<<<<<<<<<<<<<<<<<< UPLOAD IMAGE  API FOR BOOK FOR  ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
 // const fs = require('fs');
- router.post("/upload_image", upload.array('images', 1), auth, (req, res) => {
-    console.log(req.decoded.id,'>>>>>>>>>>')
+router.post("/upload_image", upload.array('images', 1), auth, (req, res) => {
+    console.log(req.decoded.id, '>>>>>>>>>>')
     try {
         let arr = [];
         let files = Object.keys(req.files);
@@ -421,10 +421,10 @@ router.post("/add_book", auth , (req, res) => {
         let filesToSend = arr.map(item => {
             return fs.readFileSync(path.resolve(path.join(__dirname, '../', item)), 'base64');
         });
-        
+
         var myData = new uploadImage(filesToSend);
         myData.save(myData);
-        
+
         // addBooksSchema.findOneAndUpdate({ 'email': req.decoded.email }, { $set: { 'images': filesToSend } }).then((result) => {
 
         //     res.status(200).json({ statusCode: 200, files: filesToSend });
@@ -445,39 +445,33 @@ router.post("/add_book", auth , (req, res) => {
 
 
 
- router.get("/get_book", async (req,res)=>{
-     console.log(JSON.stringify(req.query));
-     
-
-    //  if(req.query.sortBy && req.query.OrderBy){
-    //     sort[req.query.sortBy]   = req.query.OrderBy === 'desc' ? -1 : 1
-    // }
-     
-    addBooksSchema.find((err,count)=>{
-    var pageOptions = {
-        page: parseInt(req.query.page) || 0,
-        limit: parseInt(req.query.limit) || 10
+router.get("/get_book", auth, async (req, res) => {
+    try {
+        var pageOptions = {
+            page: parseInt(req.query.page) || 0,
+            limit: parseInt(req.query.limit) || 10
+        }
+        let key = req.query.field;
+        let val = req.query.order;
+       console.log(req.query.search)
+        let books = await findBooks(pageOptions.page, pageOptions.limit, req.query.search, key, val);
+        addBooksSchema.find((err,user)=>{
+            res.status(200).json({ result: books, total : user.length,  'message ': 'get data successfully' });
+            });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
     }
-    
-    addBooksSchema.find()
-      
-        .skip(pageOptions.page*pageOptions.limit)
-        .limit(pageOptions.limit)
-        .exec(function (err, books) {
-            if(books) {
-                res.status(200).json({result: books , 'total': count ,'message': 'books data get successfully.. '});
-            }
-            if(err) { res.status(500).json(err) };
-  
-        })
-        // try {
-        //     let books = await addBooksSchema.find().limit(+req.query.limit).skip(+req.query.page);
-        //     res.status(200).json({result :books})
-        // } catch(e) {
-        //     res.status(500).json({ error: e.message});
-        // }
-    });
-    })
+});
+
+async function findBooks(page, limit, search = '', field, order) {
+    let obj = {};
+    obj[field] = parseInt(order);
+    let books = await addBooksSchema.find({ 
+                                            name: { $regex: search },
+                                            author:{$regex : search}
+                                         }).skip(page * limit).limit(limit).sort(obj);
+    return books;
+}
 
 
 
