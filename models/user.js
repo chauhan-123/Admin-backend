@@ -106,6 +106,9 @@ var addBooksSchema = new mongoose.Schema({
     images :{
         type:Array,
         default:[]
+    },
+    code:{
+        type:Number
     }
 })
 

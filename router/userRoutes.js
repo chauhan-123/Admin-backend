@@ -385,21 +385,28 @@ router.put("/edit_profile", auth, (req, res) => {
 /* <<<<<<<<<<<<<<<<<<<<<<< ADD BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
 router.post("/add_book", auth, (req, res) => {
-    console.log(req.body, '=========')
+    addBooksSchema.findOne({'code':req.body.code},(err,user)=>{
+    if (user) res.status(400).json({ statusCode: 400, message: 'you can use another code.' });
+    if(req.body.images === [] || req.body.images === undefined){
+        return res.status(500).json({'message':'image is required'})
+     }
     try {
         let data = {
             name: req.body.name,
             price: req.body.price,
             description: req.body.description,
             author: req.body.author,
-            images: req.body.images
+            images: req.body.images,
+            code : req.body.code
         }
         var myData = new addBooksSchema(data);
         myData.save();
-        res.status(200).json({ statusCode: 200, message: 'Saved successfully', data: myData });
+        res.status(200).json({ statusCode: 200, message: ' book data Saved successfully', data: myData });
     } catch (e) {
-        // res.status(500).json({ statusCode: 500, error: e });
+        res.status(500).json({ statusCode: 500, error: e });
     }
+    })
+ 
 })
 
 
@@ -442,9 +449,6 @@ router.post("/upload_image", upload.array('images', 1), auth, (req, res) => {
 
 /* <<<<<<<<<<<<<<<<<<<<<<< GET BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
-
-
-
 router.get("/get_book", auth, async (req, res) => {
     try {
         var pageOptions = {
@@ -453,23 +457,40 @@ router.get("/get_book", auth, async (req, res) => {
         }
         let key = req.query.field;
         let val = req.query.order;
-       console.log(req.query.search)
-        let books = await findBooks(pageOptions.page, pageOptions.limit, req.query.search, key, val);
-        addBooksSchema.find((err,user)=>{
-            res.status(200).json({ result: books, total : user.length,  'message ': 'get data successfully' });
-            });
+        let name = req.query.name;
+        let author = req.query.author;
+        let price = req.query.price;
+        let promises = [
+            findBooks(pageOptions.page, pageOptions.limit, req.query.search, key, val, name,author,price),
+            addBooksSchema.find().count()
+        ];
+        Promise.all(promises).then(data => {
+            res.status(200).json({ result: data[0], total: data[1]})
+        }).catch(e => res.status(500).json({ error: e.message }))
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
 });
 
-async function findBooks(page, limit, search = '', field, order) {
+async function findBooks(page, limit, search = '', field, order , Name , Author , Price) {
     let obj = {};
-    obj[field] = parseInt(order);
-    let books = await addBooksSchema.find({ 
-                                            name: { $regex: search },
-                                            author:{$regex : search}
-                                         }).skip(page * limit).limit(limit).sort(obj);
+    let agg = [];
+    if(field) {
+        obj[field] = +order
+        agg.push({ $sort: obj })
+    }
+    if(Name && Author && Price) {
+        agg.push({ $match: { $and: [{name: Name}, { author: Author }, {price: { $eq: +Price}}]}})
+    }
+    if(limit) {
+        agg.push({ $limit: limit });
+        agg.push({ $skip: (page * limit) })
+    }
+    if(search) {
+        agg.push({ $match : { $or: [{ name: search }, { author: search }]}})
+    }
+    let books = await addBooksSchema.aggregate(agg);
+    agg = [];
     return books;
 }
 
