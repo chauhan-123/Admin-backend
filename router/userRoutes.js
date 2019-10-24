@@ -383,13 +383,14 @@ router.put("/edit_profile", auth, (req, res) => {
 })
 
 /* <<<<<<<<<<<<<<<<<<<<<<< ADD BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
-
 router.post("/add_book", auth, (req, res) => {
+        console.log(req.decoded.id,'----------------')
     addBooksSchema.findOne({'code':req.body.code},(err,user)=>{
     if (user) res.status(400).json({ statusCode: 400, message: 'you can use another code.' });
     if(req.body.images === [] || req.body.images === undefined){
         return res.status(500).json({'message':'image is required'})
      }
+
     try {
         let data = {
             name: req.body.name,
@@ -443,10 +444,6 @@ router.post("/upload_image", upload.array('images', 1), auth, (req, res) => {
 });
 
 
-
-
-
-
 /* <<<<<<<<<<<<<<<<<<<<<<< GET BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
 router.get("/get_book", auth, async (req, res) => {
@@ -472,7 +469,7 @@ router.get("/get_book", auth, async (req, res) => {
     }
 });
 
-async function findBooks(page, limit, search = '', field, order , Name , Author , Price) {
+async function findBooks(skip, limit, search = '', field, order , Name , Author , Price) {
     let obj = {};
     let agg = [];
     if(field) {
@@ -482,9 +479,8 @@ async function findBooks(page, limit, search = '', field, order , Name , Author 
     if(Name && Author && Price) {
         agg.push({ $match: { $and: [{name: Name}, { author: Author }, {price: { $eq: +Price}}]}})
     }
-    if(limit) {
-        agg.push({ $limit: limit });
-        agg.push({ $skip: (page * limit) })
+    if(limit){
+        agg.push({ $skip :limit*skip},{ $limit: limit });
     }
     if(search) {
         agg.push({ $match : { $or: [{ name: search }, { author: search }]}})
@@ -494,17 +490,28 @@ async function findBooks(page, limit, search = '', field, order , Name , Author 
     return books;
 }
 
+/* <<<<<<<<<<<<<<<<<<<<<<< GET USER DETAILS API FOR ADMIN PANEL WHEN CLICK THE IMAGE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+
+router.get("/books_details", auth ,  (req,res)=>{
+    addBooksSchema.find({'_id' : req.query.bookId },(err,user)=>{
+        res.status(200).json({result: user , 'message':'data get'})
+    })
+})  
+
+
+
 
 
 /* <<<<<<<<<<<<<<<<<<<<<<< UPDATE BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
-router.put("/update_book", (req, res) => {
+router.put("/add_book", auth , (req, res) => {
     try {
         var book = req.body.book;
         var author = req.body.author;
         var price = req.body.price;
         var description = req.body.description;
-        addBooksSchema.findOneAndUpdate({ '_id': req.body._id }, { $set: { 'book': book, 'price': price, 'description': description, 'author': author } },
+        var images = req.body.images;
+        addBooksSchema.findOneAndUpdate({ 'code': req.body.code }, { $set: { 'book': book, 'price': price, 'description': description, 'author': author , images: images } },
             { new: true }).then((result) => {
                 res.status(200).json({ statusCode: 200, message: 'Saved successfully', result: result });
             })
@@ -515,10 +522,10 @@ router.put("/update_book", (req, res) => {
 
 /* <<<<<<<<<<<<<<<<<<<<<<< DELETE  BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
-router.delete("/delete_book", (req, res) => {
+router.delete("/delete_book", auth ,(req, res) => {
+    console.log(req.query, '-------')
     try {
-        var _id = req.body._id;
-        addBooksSchema.remove({ '_id': _id }).then((result) => {
+        addBooksSchema.deleteMany({ '_id': req.query.id }).then((result) => {
             res.status(200).json({ statusCode: 200, message: 'deleted succesfully ', result: result });
         })
     } catch (e) {
