@@ -2,7 +2,9 @@ var mongoose = require("mongoose");
 mongoose.Promise = global.Promise;
 mongoose.connect("mongodb://localhost:27017/node-user1", { useNewUrlParser: true });
 const validator = require('validator');
+// const Role = require('role/role')
 var registrationSchema = new mongoose.Schema({
+   
     firstName: {
         type: String,
          required: true, 
@@ -59,9 +61,14 @@ var registrationSchema = new mongoose.Schema({
     authTokenVerified :{
         type:Boolean,
         default:true
-    }
+    },
+    role :{
+        type:String,
+        default :"user"
+    },
   
 });
+    
 
 var loginSchema = new mongoose.Schema({
     email: {
@@ -109,6 +116,9 @@ var addBooksSchema = new mongoose.Schema({
     },
     code:{
         type:Number
+    },
+    status:{
+        type:String
     }
 })
 

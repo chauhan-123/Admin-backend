@@ -64,8 +64,10 @@ router.post("/registration", (req, res) => {
                         phone: body.phone,
                         password: password,
                         otp: otp
+                        
                     }
-                    var myData = new registraionFrom(data);
+                    var myData = new registraionFrom(data )  ;
+                    console.log(myData )
                     let mailsent = await sendMailAfterRegistration(myData, otp)
                     myData.save().then(item => {
                         res.status(200).json({ statusCode: 200, message: 'item saved to the database', result: item })
@@ -118,17 +120,15 @@ async function sendMailAfterRegistration(user, otp) {
 /*    >>>>>>>>>>>>>>>>>>>>>>>>>> LOGIN API FOR SIGNIN  >>>>>>>>>>>>> >>>>>>>>>>>>>>>>>>>>>            */
 
 router.post("/login", (req, res) => {
-    registraionFrom.findOne({ email: req.body.email }).then((user, err) => {
 
+    registraionFrom.findOne({ 'email': req.body.email }).then((user, err) => {
+
+        
         if (err) res.status(401).json({ statusCode: 401, message: 'not a registered user' })
-        // if(!user.email) res.status(404).json({message:'email is not '})
         if (!user) res.status(401).json({ statusCode: 401, message: 'first signup or email is not valid' });
         var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
         if (!passwordIsValid) res.status(402).json({ statusCode: 402, message: ' your password is not match with registered password ....' });
-        // if(req.body.email != user.email) res.status(404).json({message:'your email is not correct ...'})
         if (user.authOtpVerified == true) {
-            // var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
-            // if (!passwordIsValid) res.status(401).json({ message: ' your password is not match with registered password ....' });
             var token = jwt.sign({ id: user._id, email: user.email, firstName: user.firstName }, config.secret, {
                 expiresIn: 86400 // expires in 24 hours
             });
@@ -137,16 +137,20 @@ router.post("/login", (req, res) => {
                 firstName: user.firstName,
                 email: user.email,
                 _id: user._id,
-                status: 200
+                status: 200,
+                role : user.role
             }
             res.status(200).json({ statusCode: 200, message: 'successfully logged in', result: sendToken });
         }
         else {
             res.status(400).json({ statusCode: 400, message: 'your otp is not verified and u switch the one step thats is verify otp..', error: err, sendtoken: user._id })
         }
+  
     }).catch(err => {
         console.log('error', err)
     })
+
+
 });
 
 /*  >>>>>>>>>>>>>>>>>>>>>>>>> VERIFY OTP API WHICH SEND THE ADMIN >>>>>>>>>>>>>>>>>>>>>>>>>>>>>> */
@@ -156,12 +160,6 @@ router.post('/verify-otp', (req, res) => {
             if (user.otp === req.body['data'].otp) {
                 let authOtpVerified = true;
                 registraionFrom.findOneAndUpdate({ email: user.email }, { $set: { authOtpVerified: authOtpVerified } }).then((result) => {
-                    // let data ={
-                    //     res:res.statusCode,
-                    //     result:res.user,
-                    //     message: 'your otp is verified..' 
-                    // }
-                    // res.send(data);
                     res.status(200).json({ statusCode: 200, message: 'your otp is verified..', result: user });
                 })
             }
@@ -181,7 +179,6 @@ router.post('/forgot-password', (req, res) => {
     registraionFrom.findOne({ 'email': req.body.email }, (err, user) => {
         if (err) res.status(401).json({ statusCode: 401, message: 'not a valid email id' });
         if (!user) res.status(401).json({ statusCode: 401, message: 'email id is not registered ' });
-
         if (user) {
             var token = jwt.sign({ id: user._id, email: user.email, firstName: user.firstName }, config.secret, {
                 expiresIn: 86400 // expires in 24 hours
@@ -214,20 +211,6 @@ router.post('/forgot-password', (req, res) => {
                     console.log('Email sent: ' + info.response);
                 }
             });
-
-            // var today = new Date();
-            // var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
-            // var time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
-            // var dateTime = time;
-            // const now = new Date();
-
-            // const minute = now.getTime();
-            // const time = minute/1000;
-            // 1 hour
-            // const minute = now.getMilliseconds();
-
-            // var time = moment().format('YYYY-MM-DD HH:mm:ss');
-
             var time = new Date();
             registraionFrom.findOneAndUpdate({ 'email': req.body.email }, { $set: { 'time': time } }).then((result) => {
                 res.status(200).json({ statusCode: 200, message: 'Reset pasword link send to your email..', result: user });
@@ -242,13 +225,8 @@ router.post('/forgot-password', (req, res) => {
 /*  >>>>>>>>>>>>>>>>>>>>>>>>>>>>> RESET PASSWORD API ....>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> */
 
 router.post('/reset-password', (req, res) => {
-
     registraionFrom.findOne({ 'email': req.body.email }, async (err, user) => {
-        // if (err) res.status(401).json({ statusCode:401,message: 'not a valid otp' });
-        // if (!user) res.status(401).json({statusCode:401, message: 'not a valid email...' });
-
         if (user.authTokenVerified === true) {
-
             /*
              find out the difference between two days in days,hours and minute
 
@@ -264,9 +242,6 @@ router.post('/reset-password', (req, res) => {
             var diffHrs = Math.floor((diffMs % 86400000) / 3600000); // hours
             var diffMins = Math.round(((diffMs % 86400000) % 3600000) / 60000); // minutes
             var diffSec = diffMins / 1000;
-
-            // let d = diff / 60;
-            // var timeDiff = Math.round(d);
             if (diffMins >= 5) { // thats is 5 minute..
                 res.status(500).json({ statusCode: 500, message: 'your token is expired....' })
             } else {
@@ -292,7 +267,6 @@ router.post('/reset-password', (req, res) => {
                 var end_date = moment(timePresent, 'YYYY-MM-DD HH:mm:ss');
                 var duration = moment.duration(end_date.diff(start_date));
                 var timeDi = duration.asMinutes(); 
-              
                 var timeDiff = Math.round(timeDi);
         */
 
@@ -384,13 +358,12 @@ router.put("/edit_profile", auth, (req, res) => {
 
 /* <<<<<<<<<<<<<<<<<<<<<<< ADD BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 router.post("/add_book", auth, (req, res) => {
-        console.log(req.decoded.id,'----------------')
+        console.log(req.body,'----------------')
     addBooksSchema.findOne({'code':req.body.code},(err,user)=>{
     if (user) res.status(400).json({ statusCode: 400, message: 'you can use another code.' });
     if(req.body.images === [] || req.body.images === undefined){
         return res.status(500).json({'message':'image is required'})
      }
-
     try {
         let data = {
             name: req.body.name,
@@ -398,11 +371,12 @@ router.post("/add_book", auth, (req, res) => {
             description: req.body.description,
             author: req.body.author,
             images: req.body.images,
-            code : req.body.code
+            code : req.body.code,
+            status : req.body.status
         }
         var myData = new addBooksSchema(data);
         myData.save();
-        res.status(200).json({ statusCode: 200, message: ' book data Saved successfully', data: myData });
+        res.status(200).json({ statusCode: 200, message: ' book data Saved successfully', data: myData  });
     } catch (e) {
         res.status(500).json({ statusCode: 500, error: e });
     }
@@ -413,7 +387,6 @@ router.post("/add_book", auth, (req, res) => {
 
 /* <<<<<<<<<<<<<<<<<<<<<<< UPLOAD IMAGE  API FOR BOOK FOR  ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
-// const fs = require('fs');
 router.post("/upload_image", upload.array('images', 1), auth, (req, res) => {
     console.log(req.decoded.id, '>>>>>>>>>>')
     try {
@@ -432,11 +405,6 @@ router.post("/upload_image", upload.array('images', 1), auth, (req, res) => {
 
         var myData = new uploadImage(filesToSend);
         myData.save(myData);
-
-        // addBooksSchema.findOneAndUpdate({ 'email': req.decoded.email }, { $set: { 'images': filesToSend } }).then((result) => {
-
-        //     res.status(200).json({ statusCode: 200, files: filesToSend });
-        // })
         res.status(200).json({ statusCode: 200, files: filesToSend });
     } catch (e) {
         res.status(500).json({ statusCode: 500, error: e });
@@ -477,7 +445,8 @@ async function findBooks(skip, limit, search = '', field, order , Name , Author 
         agg.push({ $sort: obj })
     }
     if(Name && Author && Price) {
-        agg.push({ $match: { $and: [{name: Name}, { author: Author }, {price: { $eq: +Price}}]}})
+    agg.push({$match :{ $or: [{ $and :[ { name : Name} , { author : Author}]} , { price :{$lte : + Price}}]}})
+        // agg.push({ $match: { $and: [{name: Name}, { author: Author }, {price: { $eq: +Price}}]}})
     }
     if(limit){
         agg.push({ $skip :limit*skip},{ $limit: limit });
@@ -493,25 +462,27 @@ async function findBooks(skip, limit, search = '', field, order , Name , Author 
 /* <<<<<<<<<<<<<<<<<<<<<<< GET USER DETAILS API FOR ADMIN PANEL WHEN CLICK THE IMAGE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
 router.get("/books_details", auth ,  (req,res)=>{
-    addBooksSchema.find({'_id' : req.query.bookId },(err,user)=>{
-        res.status(200).json({result: user , 'message':'data get'})
-    })
+    try{
+        addBooksSchema.find({'_id' : req.query.bookId },(err,user)=>{
+            res.status(200).json({result: user , 'message':'data get'})
+        })
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
 })  
-
-
-
-
 
 /* <<<<<<<<<<<<<<<<<<<<<<< UPDATE BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
 router.put("/add_book", auth , (req, res) => {
+    console.log(req.body)
     try {
         var book = req.body.book;
         var author = req.body.author;
         var price = req.body.price;
         var description = req.body.description;
         var images = req.body.images;
-        addBooksSchema.findOneAndUpdate({ 'code': req.body.code }, { $set: { 'book': book, 'price': price, 'description': description, 'author': author , images: images } },
+        var status = req.body.status
+        addBooksSchema.findOneAndUpdate({ 'code': req.body.code }, { $set: { 'book': book, 'price': price, 'description': description, 'author': author , images: images , status : status } },
             { new: true }).then((result) => {
                 res.status(200).json({ statusCode: 200, message: 'Saved successfully', result: result });
             })
@@ -523,7 +494,7 @@ router.put("/add_book", auth , (req, res) => {
 /* <<<<<<<<<<<<<<<<<<<<<<< DELETE  BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
 router.delete("/delete_book", auth ,(req, res) => {
-    console.log(req.query, '-------')
+    console.log(req.query,'-----------')
     try {
         addBooksSchema.deleteMany({ '_id': req.query.id }).then((result) => {
             res.status(200).json({ statusCode: 200, message: 'deleted succesfully ', result: result });
@@ -532,6 +503,22 @@ router.delete("/delete_book", auth ,(req, res) => {
         res.status(500).json({ statusCode: 500, error: e });
     }
 })
+
+/* <<<<<<<<<<<<<<<<<<<<<<< ACTIVE AND BLOCK  BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+
+router.put("/active_block_books", auth ,(req, res) => {
+     console.log(req.body,'-----------');
+    try {
+        let status = req.body.status;
+        addBooksSchema.findOneAndUpdate({ '_id': req.body.id }, { $set: { 'status' : status} },
+        { new: true }).then((user) => {
+            res.status(200).json({result : user , 'message' : 'user blocked successfully' ,statusCode: 200})
+        })
+    } catch (e) {
+        res.status(500).json({ statusCode: 500, error: e });
+    }
+})
+
 
 app.get("/getName", (req, res) => {
     var userName = req.body.name;
