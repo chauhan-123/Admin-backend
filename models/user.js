@@ -62,10 +62,11 @@ var registrationSchema = new mongoose.Schema({
         type:Boolean,
         default:true
     },
-    role :{
-        type:String,
-        default :"user"
-    },
+    role: {
+        type: String,
+        default: 'user',
+        enum: ["user", "admin"]
+       },
   
 });
     

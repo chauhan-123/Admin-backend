@@ -44,6 +44,7 @@ const upload = multer({
 
 /*    >>>>>>>>>>>>>>>>>>>>>>> REGISTRATION  API  FOR SIGNUP  >>>>>>>>>>>>>>>>>>>>>   */
 router.post("/registration", (req, res) => {
+    console.log(req.body,'------------')
     try {
         registraionFrom.findOne({ email: req.body.email }, async (err, user) => {
             var emailToValidate = req.body.email;
@@ -55,7 +56,6 @@ router.post("/registration", (req, res) => {
                     var body = req.body;
                     let password = await bcrypt.hash(req.body.password, 12);
                     let otp = otpGenerator.generate(6, { upperCase: false, specialChars: false });
-
                     var data = {
                         firstName: body.firstName,
                         lastName: body.lastName,
@@ -63,11 +63,15 @@ router.post("/registration", (req, res) => {
                         address: body.address,
                         phone: body.phone,
                         password: password,
-                        otp: otp
-                        
+                        otp: otp,
+                        role: body.role
                     }
+                    
+                    var token = jwt.sign({ id: data._id }, config.secret, {
+                        expiresIn: 86400 // expires in 24 hours
+                    }); 
+                    data.token = token;
                     var myData = new registraionFrom(data )  ;
-                    console.log(myData )
                     let mailsent = await sendMailAfterRegistration(myData, otp)
                     myData.save().then(item => {
                         res.status(200).json({ statusCode: 200, message: 'item saved to the database', result: item })
@@ -120,10 +124,7 @@ async function sendMailAfterRegistration(user, otp) {
 /*    >>>>>>>>>>>>>>>>>>>>>>>>>> LOGIN API FOR SIGNIN  >>>>>>>>>>>>> >>>>>>>>>>>>>>>>>>>>>            */
 
 router.post("/login", (req, res) => {
-
     registraionFrom.findOne({ 'email': req.body.email }).then((user, err) => {
-
-        
         if (err) res.status(401).json({ statusCode: 401, message: 'not a registered user' })
         if (!user) res.status(401).json({ statusCode: 401, message: 'first signup or email is not valid' });
         var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
@@ -132,6 +133,7 @@ router.post("/login", (req, res) => {
             var token = jwt.sign({ id: user._id, email: user.email, firstName: user.firstName }, config.secret, {
                 expiresIn: 86400 // expires in 24 hours
             });
+             registraionFrom.findByIdAndUpdate(user._id, { token });
             var sendToken = {
                 token: token,
                 firstName: user.firstName,
