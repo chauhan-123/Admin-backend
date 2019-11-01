@@ -42,9 +42,26 @@ const upload = multer({
     fileFilter
 });
 
+/*      
+ DASHBOARD API FOR ADMIN WHICH SHOW 
+ THE HOW MANY USERS AND ADMIN LOGIN WITH CURRENT DATABASE
+*/
+
+router.get('/dashboard_details', auth, (req, res) => {
+    try {
+        registraionFrom.find().then((user, err) => {
+            res.status(200).json({ statusCode: 200, message: 'data successfully get from database', data: user })
+        })
+    } catch (e) {
+        res.status(500).json({ statusCode: 500, error: e });
+    }
+})
+
+
+
 /*    >>>>>>>>>>>>>>>>>>>>>>> REGISTRATION  API  FOR SIGNUP  >>>>>>>>>>>>>>>>>>>>>   */
 router.post("/registration", (req, res) => {
-    console.log(req.body,'------------')
+    console.log(req.body, '------------')
     try {
         registraionFrom.findOne({ email: req.body.email }, async (err, user) => {
             var emailToValidate = req.body.email;
@@ -66,12 +83,12 @@ router.post("/registration", (req, res) => {
                         otp: otp,
                         role: body.role
                     }
-                    
+
                     var token = jwt.sign({ id: data._id }, config.secret, {
                         expiresIn: 86400 // expires in 24 hours
-                    }); 
+                    });
                     data.token = token;
-                    var myData = new registraionFrom(data )  ;
+                    var myData = new registraionFrom(data);
                     let mailsent = await sendMailAfterRegistration(myData, otp)
                     myData.save().then(item => {
                         res.status(200).json({ statusCode: 200, message: 'item saved to the database', result: item })
@@ -133,21 +150,21 @@ router.post("/login", (req, res) => {
             var token = jwt.sign({ id: user._id, email: user.email, firstName: user.firstName }, config.secret, {
                 expiresIn: 86400 // expires in 24 hours
             });
-             registraionFrom.findByIdAndUpdate(user._id, { token });
+            registraionFrom.findByIdAndUpdate(user._id, { token });
             var sendToken = {
                 token: token,
                 firstName: user.firstName,
                 email: user.email,
                 _id: user._id,
                 status: 200,
-                role : user.role
+                role: user.role
             }
             res.status(200).json({ statusCode: 200, message: 'successfully logged in', result: sendToken });
         }
         else {
             res.status(400).json({ statusCode: 400, message: 'your otp is not verified and u switch the one step thats is verify otp..', error: err, sendtoken: user._id })
         }
-  
+
     }).catch(err => {
         console.log('error', err)
     })
@@ -360,30 +377,30 @@ router.put("/edit_profile", auth, (req, res) => {
 
 /* <<<<<<<<<<<<<<<<<<<<<<< ADD BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 router.post("/add_book", auth, (req, res) => {
-        console.log(req.body,'----------------')
-    addBooksSchema.findOne({'code':req.body.code},(err,user)=>{
-    if (user) res.status(400).json({ statusCode: 400, message: 'you can use another code.' });
-    if(req.body.images === [] || req.body.images === undefined){
-        return res.status(500).json({'message':'image is required'})
-     }
-    try {
-        let data = {
-            name: req.body.name,
-            price: req.body.price,
-            description: req.body.description,
-            author: req.body.author,
-            images: req.body.images,
-            code : req.body.code,
-            status : req.body.status
+    console.log(req.body, '----------------')
+    addBooksSchema.findOne({ 'code': req.body.code }, (err, user) => {
+        if (user) res.status(400).json({ statusCode: 400, message: 'you can use another code.' });
+        if (req.body.images === [] || req.body.images === undefined) {
+            return res.status(500).json({ 'message': 'image is required' })
         }
-        var myData = new addBooksSchema(data);
-        myData.save();
-        res.status(200).json({ statusCode: 200, message: ' book data Saved successfully', data: myData  });
-    } catch (e) {
-        res.status(500).json({ statusCode: 500, error: e });
-    }
+        try {
+            let data = {
+                name: req.body.name,
+                price: req.body.price,
+                description: req.body.description,
+                author: req.body.author,
+                images: req.body.images,
+                code: req.body.code,
+                status: req.body.status
+            }
+            var myData = new addBooksSchema(data);
+            myData.save();
+            res.status(200).json({ statusCode: 200, message: ' book data Saved successfully', data: myData });
+        } catch (e) {
+            res.status(500).json({ statusCode: 500, error: e });
+        }
     })
- 
+
 })
 
 
@@ -428,33 +445,33 @@ router.get("/get_book", auth, async (req, res) => {
         let author = req.query.author;
         let price = req.query.price;
         let promises = [
-            findBooks(pageOptions.page, pageOptions.limit, req.query.search, key, val, name,author,price),
+            findBooks(pageOptions.page, pageOptions.limit, req.query.search, key, val, name, author, price),
             addBooksSchema.find().count()
         ];
         Promise.all(promises).then(data => {
-            res.status(200).json({ result: data[0], total: data[1]})
+            res.status(200).json({ result: data[0], total: data[1] })
         }).catch(e => res.status(500).json({ error: e.message }))
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
 });
 
-async function findBooks(skip, limit, search = '', field, order , Name , Author , Price) {
+async function findBooks(skip, limit, search = '', field, order, Name, Author, Price) {
     let obj = {};
     let agg = [];
-    if(field) {
+    if (field) {
         obj[field] = +order
         agg.push({ $sort: obj })
     }
-    if(Name && Author && Price) {
-    agg.push({$match :{ $or: [{ $and :[ { name : Name} , { author : Author}]} , { price :{$lte : + Price}}]}})
+    if (Name && Author && Price) {
+        agg.push({ $match: { $or: [{ $and: [{ name: Name }, { author: Author }] }, { price: { $lte: + Price } }] } })
         // agg.push({ $match: { $and: [{name: Name}, { author: Author }, {price: { $eq: +Price}}]}})
     }
-    if(limit){
-        agg.push({ $skip :limit*skip},{ $limit: limit });
+    if (limit) {
+        agg.push({ $skip: limit * skip }, { $limit: limit });
     }
-    if(search) {
-        agg.push({ $match : { $or: [{ name: search }, { author: search }]}})
+    if (search) {
+        agg.push({ $match: { $or: [{ name: search }, { author: search }] } })
     }
     let books = await addBooksSchema.aggregate(agg);
     agg = [];
@@ -463,19 +480,19 @@ async function findBooks(skip, limit, search = '', field, order , Name , Author 
 
 /* <<<<<<<<<<<<<<<<<<<<<<< GET USER DETAILS API FOR ADMIN PANEL WHEN CLICK THE IMAGE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
-router.get("/books_details", auth ,  (req,res)=>{
-    try{
-        addBooksSchema.find({'_id' : req.query.bookId },(err,user)=>{
-            res.status(200).json({result: user , 'message':'data get'})
+router.get("/books_details", auth, (req, res) => {
+    try {
+        addBooksSchema.find({ '_id': req.query.bookId }, (err, user) => {
+            res.status(200).json({ result: user, 'message': 'data get' })
         })
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
-})  
+})
 
 /* <<<<<<<<<<<<<<<<<<<<<<< UPDATE BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
-router.put("/add_book", auth , (req, res) => {
+router.put("/add_book", auth, (req, res) => {
     console.log(req.body)
     try {
         var book = req.body.book;
@@ -484,7 +501,7 @@ router.put("/add_book", auth , (req, res) => {
         var description = req.body.description;
         var images = req.body.images;
         var status = req.body.status
-        addBooksSchema.findOneAndUpdate({ 'code': req.body.code }, { $set: { 'book': book, 'price': price, 'description': description, 'author': author , images: images , status : status } },
+        addBooksSchema.findOneAndUpdate({ 'code': req.body.code }, { $set: { 'book': book, 'price': price, 'description': description, 'author': author, images: images, status: status } },
             { new: true }).then((result) => {
                 res.status(200).json({ statusCode: 200, message: 'Saved successfully', result: result });
             })
@@ -495,8 +512,8 @@ router.put("/add_book", auth , (req, res) => {
 
 /* <<<<<<<<<<<<<<<<<<<<<<< DELETE  BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
-router.delete("/delete_book", auth ,(req, res) => {
-    console.log(req.query,'-----------')
+router.delete("/delete_book", auth, (req, res) => {
+    console.log(req.query, '-----------')
     try {
         addBooksSchema.deleteMany({ '_id': req.query.id }).then((result) => {
             res.status(200).json({ statusCode: 200, message: 'deleted succesfully ', result: result });
@@ -508,14 +525,14 @@ router.delete("/delete_book", auth ,(req, res) => {
 
 /* <<<<<<<<<<<<<<<<<<<<<<< ACTIVE AND BLOCK  BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
-router.put("/active_block_books", auth ,(req, res) => {
-     console.log(req.body,'-----------');
+router.put("/active_block_books", auth, (req, res) => {
+    console.log(req.body, '-----------');
     try {
         let status = req.body.status;
-        addBooksSchema.findOneAndUpdate({ '_id': req.body.id }, { $set: { 'status' : status} },
-        { new: true }).then((user) => {
-            res.status(200).json({result : user , 'message' : 'user blocked successfully' ,statusCode: 200})
-        })
+        addBooksSchema.findOneAndUpdate({ '_id': req.body.id }, { $set: { 'status': status } },
+            { new: true }).then((user) => {
+                res.status(200).json({ result: user, 'message': 'user blocked successfully', statusCode: 200 })
+            })
     } catch (e) {
         res.status(500).json({ statusCode: 500, error: e });
     }
