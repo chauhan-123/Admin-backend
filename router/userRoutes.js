@@ -198,43 +198,87 @@ router.post('/forgot-password', (req, res) => {
     registraionFrom.findOne({ 'email': req.body.email }, (err, user) => {
         if (err) res.status(401).json({ statusCode: 401, message: 'not a valid email id' });
         if (!user) res.status(401).json({ statusCode: 401, message: 'email id is not registered ' });
-        if (user) {
-            var token = jwt.sign({ id: user._id, email: user.email, firstName: user.firstName }, config.secret, {
-                expiresIn: 86400 // expires in 24 hours
-            });
-            var transporter = nodemailer.createTransport({
-                service: 'gmail',
-                auth: {
-                    user: 'chauhan1995sumit@gmail.com',
-                    pass: 'Sumit@12345'
-                }
-            });
-            var mailOptions = {
-                from: 'chauhan1995sumit@gmail.com',
-                to: req.body.email,
-                text: 'resend email',
-                subject: 'Sending Email using Node.js',
-                html: `<p>Click <a href="http://localhost:1111/account/reset-password?token=${token}">sendToken=${token}</a> to reset your password</p>`
-                // text: OTP,
-                //html: '<p>Click</p> <a href="http://localhost:1111/account/forgot-password?email=${email}" > here</a> '
-                // from: 'sumitchauan111@gmail.com',
-                // to: req.body.email,
-                // subject: 'Sending Email using Node.js',
-                // text: otp
-                // html: `<p>Click <a href="http://localhost:1111/account/reset-password?email=${Email}">sendEmail</a> to reset your password</p>`
-            };
-            transporter.sendMail(mailOptions, function (error, info) {
-                if (error) {
-                    console.log(error);
-                } else {
-                    console.log('Email sent: ' + info.response);
-                }
-            });
-            var time = new Date();
-            registraionFrom.findOneAndUpdate({ 'email': req.body.email }, { $set: { 'time': time } }).then((result) => {
-                res.status(200).json({ statusCode: 200, message: 'Reset pasword link send to your email..', result: user });
-            }).catch(e => res.status(500).json({ error: e }))
+        console.log(user);
+        if (user.role === 'user') {
+            if (user) {
+                var token = jwt.sign({ id: user._id, email: user.email, firstName: user.firstName }, config.secret, {
+                    expiresIn: 86400 // expires in 24 hours
+                });
+                var transporter = nodemailer.createTransport({
+                    service: 'gmail',
+                    auth: {
+                        user: 'chauhan1995sumit@gmail.com',
+                        pass: 'Sumit@12345'
+                    }
+                });
+                var mailOptions = {
+                    from: 'chauhan1995sumit@gmail.com',
+                    to: req.body.email,
+                    text: 'resend email',
+                    subject: 'Sending Email using Node.js',
+                    html: `<p>Click <a href="http://localhost:1111/user/reset-password?token=${token}">sendToken=${token}</a> to reset your password</p>`
+                    // text: OTP,
+                    //html: '<p>Click</p> <a href="http://localhost:1111/account/forgot-password?email=${email}" > here</a> '
+                    // from: 'sumitchauan111@gmail.com',
+                    // to: req.body.email,
+                    // subject: 'Sending Email using Node.js',
+                    // text: otp
+                    // html: `<p>Click <a href="http://localhost:1111/account/reset-password?email=${Email}">sendEmail</a> to reset your password</p>`
+                };
+                transporter.sendMail(mailOptions, function (error, info) {
+                    if (error) {
+                        console.log(error);
+                    } else {
+                        console.log('Email sent: ' + info.response);
+                    }
+                });
+                var time = new Date();
+                registraionFrom.findOneAndUpdate({ 'email': req.body.email }, { $set: { 'time': time } }).then((result) => {
+                    res.status(200).json({ statusCode: 200, message: 'Reset pasword link send to your email..', result: user });
+                }).catch(e => res.status(500).json({ error: e }))
 
+            }
+        }
+        else if (user.role === 'admin') {
+            if (user) {
+                var token = jwt.sign({ id: user._id, email: user.email, firstName: user.firstName }, config.secret, {
+                    expiresIn: 86400 // expires in 24 hours
+                });
+                var transporter = nodemailer.createTransport({
+                    service: 'gmail',
+                    auth: {
+                        user: 'chauhan1995sumit@gmail.com',
+                        pass: 'Sumit@12345'
+                    }
+                });
+                var mailOptions = {
+                    from: 'chauhan1995sumit@gmail.com',
+                    to: req.body.email,
+                    text: 'resend email',
+                    subject: 'Sending Email using Node.js',
+                    html: `<p>Click <a href="http://localhost:1111/account/reset-password?token=${token}">sendToken=${token}</a> to reset your password</p>`
+                    // text: OTP,
+                    //html: '<p>Click</p> <a href="http://localhost:1111/account/forgot-password?email=${email}" > here</a> '
+                    // from: 'sumitchauan111@gmail.com',
+                    // to: req.body.email,
+                    // subject: 'Sending Email using Node.js',
+                    // text: otp
+                    // html: `<p>Click <a href="http://localhost:1111/account/reset-password?email=${Email}">sendEmail</a> to reset your password</p>`
+                };
+                transporter.sendMail(mailOptions, function (error, info) {
+                    if (error) {
+                        console.log(error);
+                    } else {
+                        console.log('Email sent: ' + info.response);
+                    }
+                });
+                var time = new Date();
+                registraionFrom.findOneAndUpdate({ 'email': req.body.email }, { $set: { 'time': time } }).then((result) => {
+                    res.status(200).json({ statusCode: 200, message: 'Reset pasword link send to your email..', result: user });
+                }).catch(e => res.status(500).json({ error: e }))
+
+            }
+        } else {
         }
     });
 });
