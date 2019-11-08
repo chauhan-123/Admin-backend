@@ -2,7 +2,6 @@ var mongoose = require("mongoose");
 mongoose.Promise = global.Promise;
 mongoose.connect("mongodb://localhost:27017/node-user1", { useNewUrlParser: true });
 const validator = require('validator');
-// const Role = require('role/role')
 var registrationSchema = new mongoose.Schema({
    
     firstName: {
@@ -64,7 +63,7 @@ var registrationSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        default: 'user',
+        // default: 'user',
         enum: ["user", "admin"]
        },
   

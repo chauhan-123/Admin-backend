@@ -138,7 +138,7 @@ async function sendMailAfterRegistration(user, otp) {
 
 
 
-/*    >>>>>>>>>>>>>>>>>>>>>>>>>> LOGIN API FOR SIGNIN  >>>>>>>>>>>>> >>>>>>>>>>>>>>>>>>>>>            */
+/*    >>>>>>>>>>>>>>>>>>>>>>>>>> LOGIN API FOR SIGNIN  >>>>>>>>>>>>> >>>>>>>>>>>>>>>>>>>>>  */
 
 router.post("/login", (req, res) => {
     registraionFrom.findOne({ 'email': req.body.email }).then((user, err) => {
@@ -146,23 +146,46 @@ router.post("/login", (req, res) => {
         if (!user) res.status(401).json({ statusCode: 401, message: 'first signup or email is not valid' });
         var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
         if (!passwordIsValid) res.status(402).json({ statusCode: 402, message: ' your password is not match with registered password ....' });
-        if (user.authOtpVerified == true) {
-            var token = jwt.sign({ id: user._id, email: user.email, firstName: user.firstName }, config.secret, {
-                expiresIn: 86400 // expires in 24 hours
-            });
-            registraionFrom.findByIdAndUpdate(user._id, { token });
-            var sendToken = {
-                token: token,
-                firstName: user.firstName,
-                email: user.email,
-                _id: user._id,
-                status: 200,
-                role: user.role
+        if ((req.body.role == user.role) && (user.email === req.body.email)) {
+            if (user.authOtpVerified == true) {
+                var token = jwt.sign({ id: user._id, email: user.email, firstName: user.firstName }, config.secret, {
+                    expiresIn: 86400 // expires in 24 hours
+                });
+                registraionFrom.findByIdAndUpdate(user._id, { token });
+                var sendToken = {
+                    token: token,
+                    firstName: user.firstName,
+                    email: user.email,
+                    _id: user._id,
+                    status: 200,
+                    role: user.role
+                }
+                res.status(200).json({ statusCode: 200, message: 'successfully logged in', result: sendToken });
             }
-            res.status(200).json({ statusCode: 200, message: 'successfully logged in', result: sendToken });
-        }
-        else {
-            res.status(400).json({ statusCode: 400, message: 'your otp is not verified and u switch the one step thats is verify otp..', error: err, sendtoken: user._id })
+            else {
+                res.status(400).json({ statusCode: 400, message: 'your otp is not verified and u switch the one step thats is verify otp..', error: err, sendtoken: user._id })
+            }
+        } else if ((req.body.role == user.role) && (user.email === req.body.email)) {
+            if (user.authOtpVerified == true) {
+                var token = jwt.sign({ id: user._id, email: user.email, firstName: user.firstName }, config.secret, {
+                    expiresIn: 86400 // expires in 24 hours
+                });
+                registraionFrom.findByIdAndUpdate(user._id, { token });
+                var sendToken = {
+                    token: token,
+                    firstName: user.firstName,
+                    email: user.email,
+                    _id: user._id,
+                    status: 200,
+                    role: user.role
+                }
+                res.status(200).json({ statusCode: 200, message: 'successfully logged in', result: sendToken });
+            }
+            else {
+                res.status(400).json({ statusCode: 400, message: 'your otp is not verified and u switch the one step thats is verify otp..', error: err, sendtoken: user._id })
+            }
+        } else {
+            res.status(401).json({ 'message': 'you are not access this account' })
         }
 
     }).catch(err => {
