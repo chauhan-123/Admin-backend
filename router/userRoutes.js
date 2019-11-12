@@ -14,7 +14,7 @@ var registraion = require('../models/user');
 var registraionFrom = registraion.User;
 var uploadImage = registraion.uploadImage;
 var addBooksSchema = registraion.addBooksSchema;
-
+var chatApplicationSchema = registraion.chatApplicationSchema;
 
 
 // Middlewares
@@ -604,6 +604,53 @@ router.put("/active_block_books", auth, (req, res) => {
         res.status(500).json({ statusCode: 500, error: e });
     }
 })
+
+ 
+router.post("/user_chat" , auth, (req,res)=>{
+    console.log(req.decoded)
+    try{
+        chatApplicationSchema.create((req.body) , (err , user)=>{
+            res.status(200).json({'message': ' meg send ', result : user })
+        })
+
+    } catch(e){
+        res.status(500).json({ statusCode: 500, error: e });
+    }
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 app.get("/getName", (req, res) => {

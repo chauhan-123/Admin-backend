@@ -122,11 +122,22 @@ var addBooksSchema = new mongoose.Schema({
     }
 })
 
+var chatApplicationSchema = new mongoose.Schema({
+    message:{
+        type:String
+    },
+    time: {
+        type: Date,
+        default: Date.now 
+    },
+})
+
 
 var User = mongoose.model("user", registrationSchema);
 var login = mongoose.model("login", loginSchema);
 var uploadImage = mongoose.model("uploadImage", uploadImageSchema);
-var addBooksSchema = mongoose.model("addBooks", addBooksSchema)
+var addBooksSchema = mongoose.model("addBooks", addBooksSchema);
+var chatApplicationSchema = mongoose.model("chatApplication", chatApplicationSchema)
 
 
 
@@ -134,3 +145,4 @@ module.exports.User = User;
 module.exports.login = login;
 module.exports.uploadImage = uploadImage;
 module.exports.addBooksSchema = addBooksSchema;
+module.exports.chatApplicationSchema = chatApplicationSchema;

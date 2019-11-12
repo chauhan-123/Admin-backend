@@ -9,6 +9,25 @@ const morgan = require('morgan');
 const port = process.env.PORT || 3000;
 
 
+// Socket function
+let http = require('http');
+const server = http.createServer(app);
+const io = require('socket.io')(server);
+io.origins(['*:*']);
+
+
+// server.listen(port,() => {
+//     console.log(`started on port: ${port}`);
+// });
+
+io.on('connection', (socket) => {
+    socket.on('new-message', (message , res) => {
+        res.set('Access-Control-Allow-Origin', '*')
+        io.sockets.emit('new-message', message);
+    });
+});
+
+
 // Middlewares
 app.use(cors());
 app.use(bodyParser.json())
@@ -31,6 +50,10 @@ app.use((err, req, res, next) => {
         }
     })
 });
+
+
+
+
 
 // Server
 app.listen(port, () => {
