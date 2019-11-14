@@ -605,7 +605,7 @@ router.put("/active_block_books", auth, (req, res) => {
     }
 })
 
- 
+ /* <<<<<<<<<<<<<<<<<<<<<<< CHAT API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 router.post("/user_chat" , auth, (req,res)=>{
     console.log(req.decoded)
     try{
@@ -619,7 +619,14 @@ router.post("/user_chat" , auth, (req,res)=>{
 })
 
 
+/* <<<<<<<<<<<<<<<<<<<<<<< NOTIFICATION API FOR ADMIN PANEL>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
+router.get("/get_notification" , (req,res)=>{
+    console.log('notification working');
+    registraionFrom.find((err,user)=>{
+      res.status(200).json({'message':'notification data get successfully ' , statusCode:200 , result : user})
+    })
+})
 
 
 
