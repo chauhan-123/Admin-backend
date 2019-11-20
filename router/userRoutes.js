@@ -15,7 +15,19 @@ var registraionFrom = registraion.User;
 var uploadImage = registraion.uploadImage;
 var addBooksSchema = registraion.addBooksSchema;
 var chatApplicationSchema = registraion.chatApplicationSchema;
+var subscribeSchema = registraion.subscribeSchema;
+// chattind import
+let http = require('http');
 
+const server = http.createServer(app);
+const io = require('socket.io')(server);
+io.origins(['*:*']);
+
+io.on('connection', (socket) => {
+    socket.on('new-message', (message) => {
+        io.sockets.emit('new-message', message);
+    });
+});
 
 // Middlewares
 var storage = multer.diskStorage({
@@ -444,7 +456,6 @@ router.put("/edit_profile", auth, (req, res) => {
 
 /* <<<<<<<<<<<<<<<<<<<<<<< ADD BOOK  API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 router.post("/add_book", auth, (req, res) => {
-    console.log(req.body, '----------------')
     addBooksSchema.findOne({ 'code': req.body.code }, (err, user) => {
         if (user) res.status(400).json({ statusCode: 400, message: 'you can use another code.' });
         if (req.body.images === [] || req.body.images === undefined) {
@@ -629,9 +640,51 @@ router.get("/get_notification" , (req,res)=>{
 })
 
 
+/* <<<<<<<<<<<<<<<<<<<<<<< SUBSCRIPTION API FOR USER PANEL>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+
+router.post("/subscription", (req,res)=>{
+    try {
+        let data = {
+            firstName: req.body.firstName,
+            email:req.body.email,
+            subscribeType:req.body.subscribeType,
+            subscribeAmount:req.body.subscribeAmount
+        }
+        var myData = new subscribeSchema(data);
+        myData.save();
+        res.status(200).json({ statusCode: 200, message: ' subscription data Saved successfully', data: myData });
+    }
+    catch (e) {
+      res.status(500).json({statusCode:500 , error:e})
+    }
+})
 
 
 
+/* <<<<<<<<<<<<<<<<<<<<<<< SUBSCRIPTION API FOR ADMIN PANEL SHOW THE ADMIN DETAILS>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+router.get("/subscription_details" , auth, (req,res)=>{
+    try{
+    subscribeSchema.find((err,user)=>{
+        res.status(200).json({'message':'subscription data get successfully ' , statusCode:200 , result : user})
+      })
+    }
+    catch(e) {
+        res.status(500).json({statusCode:500 , error : e})
+    }
+});
+
+
+
+/* <<<<<<<<<<<<<<<<<<<<<<< SUBSCRIPTION API FOR ADMIN PANEL WHEN USER CLICK THE VIEW BUTTON>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+router.get("/viewSubscriptionDetails" , auth , (req,res)=>{
+    try {
+        subscribeSchema.find({ '_id': req.query.subscribeId }, (err, user) => {
+            res.status(200).json({ result: user, 'message': 'data get' })
+        })
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
 
 
 

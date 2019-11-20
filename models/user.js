@@ -132,12 +132,32 @@ var chatApplicationSchema = new mongoose.Schema({
     },
 })
 
+var subscribeSchema = new mongoose.Schema({
+    firstName :{
+        type:String
+    },
+    email:{
+        type:String
+    },
+    subscribeType:{
+        type:String
+    },
+    subscribeAmount:{
+        type:Number
+    },
+    time:{
+        type: Date,
+        default: Date.now 
+    }
+})
+
 
 var User = mongoose.model("user", registrationSchema);
 var login = mongoose.model("login", loginSchema);
 var uploadImage = mongoose.model("uploadImage", uploadImageSchema);
 var addBooksSchema = mongoose.model("addBooks", addBooksSchema);
-var chatApplicationSchema = mongoose.model("chatApplication", chatApplicationSchema)
+var chatApplicationSchema = mongoose.model("chatApplication", chatApplicationSchema);
+var subscribeSchema = mongoose.model("subscription" , subscribeSchema);
 
 
 
@@ -146,3 +166,4 @@ module.exports.login = login;
 module.exports.uploadImage = uploadImage;
 module.exports.addBooksSchema = addBooksSchema;
 module.exports.chatApplicationSchema = chatApplicationSchema;
+module.exports.subscribeSchema = subscribeSchema;
