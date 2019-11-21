@@ -16,6 +16,7 @@ var uploadImage = registraion.uploadImage;
 var addBooksSchema = registraion.addBooksSchema;
 var chatApplicationSchema = registraion.chatApplicationSchema;
 var subscribeSchema = registraion.subscribeSchema;
+var cashOnDelivery = registraion.cashOnDeliveey;
 // chattind import
 let http = require('http');
 
@@ -616,15 +617,15 @@ router.put("/active_block_books", auth, (req, res) => {
     }
 })
 
- /* <<<<<<<<<<<<<<<<<<<<<<< CHAT API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
-router.post("/user_chat" , auth, (req,res)=>{
+/* <<<<<<<<<<<<<<<<<<<<<<< CHAT API FOR ADMIN PANEL >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+router.post("/user_chat", auth, (req, res) => {
     console.log(req.decoded)
-    try{
-        chatApplicationSchema.create((req.body) , (err , user)=>{
-            res.status(200).json({'message': ' meg send ', result : user })
+    try {
+        chatApplicationSchema.create((req.body), (err, user) => {
+            res.status(200).json({ 'message': ' meg send ', result: user })
         })
 
-    } catch(e){
+    } catch (e) {
         res.status(500).json({ statusCode: 500, error: e });
     }
 })
@@ -632,51 +633,51 @@ router.post("/user_chat" , auth, (req,res)=>{
 
 /* <<<<<<<<<<<<<<<<<<<<<<< NOTIFICATION API FOR ADMIN PANEL>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
-router.get("/get_notification" , (req,res)=>{
+router.get("/get_notification", (req, res) => {
     console.log('notification working');
-    registraionFrom.find((err,user)=>{
-      res.status(200).json({'message':'notification data get successfully ' , statusCode:200 , result : user})
+    registraionFrom.find((err, user) => {
+        res.status(200).json({ 'message': 'notification data get successfully ', statusCode: 200, result: user })
     })
 })
 
 
 /* <<<<<<<<<<<<<<<<<<<<<<< SUBSCRIPTION API FOR USER PANEL>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
-router.post("/subscription", (req,res)=>{
+router.post("/subscription", auth, (req, res) => {
     try {
         let data = {
             firstName: req.body.firstName,
-            email:req.body.email,
-            subscribeType:req.body.subscribeType,
-            subscribeAmount:req.body.subscribeAmount
+            email: req.body.email,
+            subscribeType: req.body.subscribeType,
+            subscribeAmount: req.body.subscribeAmount
         }
         var myData = new subscribeSchema(data);
         myData.save();
         res.status(200).json({ statusCode: 200, message: ' subscription data Saved successfully', data: myData });
     }
     catch (e) {
-      res.status(500).json({statusCode:500 , error:e})
+        res.status(500).json({ statusCode: 500, error: e })
     }
 })
 
 
 
 /* <<<<<<<<<<<<<<<<<<<<<<< SUBSCRIPTION API FOR ADMIN PANEL SHOW THE ADMIN DETAILS>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
-router.get("/subscription_details" , auth, (req,res)=>{
-    try{
-    subscribeSchema.find((err,user)=>{
-        res.status(200).json({'message':'subscription data get successfully ' , statusCode:200 , result : user})
-      })
+router.get("/subscription_details", auth, (req, res) => {
+    try {
+        subscribeSchema.find((err, user) => {
+            res.status(200).json({ 'message': 'subscription data get successfully ', statusCode: 200, result: user })
+        })
     }
-    catch(e) {
-        res.status(500).json({statusCode:500 , error : e})
+    catch (e) {
+        res.status(500).json({ statusCode: 500, error: e })
     }
 });
 
 
 
 /* <<<<<<<<<<<<<<<<<<<<<<< SUBSCRIPTION API FOR ADMIN PANEL WHEN USER CLICK THE VIEW BUTTON>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
-router.get("/viewSubscriptionDetails" , auth , (req,res)=>{
+router.get("/viewSubscriptionDetails", auth, (req, res) => {
     try {
         subscribeSchema.find({ '_id': req.query.subscribeId }, (err, user) => {
             res.status(200).json({ result: user, 'message': 'data get' })
@@ -688,9 +689,52 @@ router.get("/viewSubscriptionDetails" , auth , (req,res)=>{
 
 
 
+/* <<<<<<<<<<<<<<<<<<<<<<< CASH ON DELIVERY API FOR ONLINE PAYMENT>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
 
-
-
+router.post("/cashOnDelivery", auth, (req, res) => {
+    try {
+        let data = {
+            firstName: req.body.firstName,
+            email: req.body.email,
+            phone: req.body.phone,
+            country: req.body.country,
+            city: req.body.city,
+            pincode: req.body.pincode,
+            address: req.body.address,
+            state: req.body.state
+        }
+        var myData = new cashOnDelivery(data);
+        myData.save();
+        var transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: 'chauhan1995sumit@gmail.com',
+                pass: 'Sumit@12345'
+            }
+        });
+        var mailOptions = {
+            from: 'chauhan1995sumit@gmail.com',
+            to: req.body.email,
+            text: 'resend email',
+            subject: 'Sending Email using Node.js',
+            html: `<p>Thanks for shopping on our online book store<br> 
+                      We will be deliver as soon as possible <br>
+                      Thanks @ Regards<br>
+                      <h3> Sumit Singh Chauhan</h3></p>`
+        };
+        transporter.sendMail(mailOptions, function (error, info) {
+            if (error) {
+                console.log(error);
+            } else {
+                console.log('Email sent: ' + info.response);
+            }
+        });
+        res.status(200).json({ statusCode: 200, message: ' subscription data Saved successfully', data: myData });
+    }
+    catch (e) {
+        res.status(500).json({ statusCode: 500, error: e })
+    }
+})
 
 
 

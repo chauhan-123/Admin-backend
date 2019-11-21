@@ -152,12 +152,52 @@ var subscribeSchema = new mongoose.Schema({
 })
 
 
+var cashOnDeliveey = new mongoose.Schema({
+    firstName:{
+        type:String,
+        required:true
+    },
+    email:{
+        type:String,
+        required:true
+    },
+    phone:{
+        type:String,
+        required:true
+    },
+    address:{
+        type:String,
+        required:true
+    },
+    pincode:{
+        type:String,
+        required:true
+    },
+    city:{
+        type:String,
+        required:true
+    },
+    state:{
+        type:String,
+        required:true
+    },
+    country:{
+        type:String,
+        required:true
+    },
+    time:{
+        type:Date,
+        default:Date.now
+    }
+})
+
 var User = mongoose.model("user", registrationSchema);
 var login = mongoose.model("login", loginSchema);
 var uploadImage = mongoose.model("uploadImage", uploadImageSchema);
 var addBooksSchema = mongoose.model("addBooks", addBooksSchema);
 var chatApplicationSchema = mongoose.model("chatApplication", chatApplicationSchema);
 var subscribeSchema = mongoose.model("subscription" , subscribeSchema);
+var cashOnDeliveey = mongoose.model("cashOnDeliveey", cashOnDeliveey);
 
 
 
@@ -167,3 +207,4 @@ module.exports.uploadImage = uploadImage;
 module.exports.addBooksSchema = addBooksSchema;
 module.exports.chatApplicationSchema = chatApplicationSchema;
 module.exports.subscribeSchema = subscribeSchema;
+module.exports.cashOnDeliveey = cashOnDeliveey;
