@@ -9,6 +9,7 @@ const config = require('../../model/config.js');
 const multer = require('multer');
 const mailFun = require('../utilities/mail')
 const path = require('path');
+var pin = require('pincode');
 var app = express();
 var registraion = require('../models/user');
 var registraionFrom = registraion.User;
@@ -358,7 +359,6 @@ router.post('/reset-password', (req, res) => {
         } else {
             res.status(405).json({ statusCode: 405, message: 'token is expired ..' })
         }
-
         /*
                   if(user.otp == req.body.otp){     <....this code generate the otp time and checking and validate the otp...>
                 var start_date = moment(user.time, 'YYYY-MM-DD HH:mm:ss'); 
@@ -737,7 +737,31 @@ router.post("/cashOnDelivery", auth, (req, res) => {
 })
 
 
+/* <<<<<<<<<<<<<<<<<<<<<<< GET THE PINCODE DATA FROM THIS API>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>*/
+router.get("/getPincodeData", auth, (req, res) => {
+    console.log(req.query.pincode, '================');
+    let pincode = req.query.pincode;
+    pin.seachByPin(pincode, function (response) {
+        response.forEach(function (data) {
+            console.log(data);
+        });
+    });
+});
 
+// router.get("/getPincodeData",auth, (req,res)=>{
+//     console.log(pincode , 'oooooooooo')
+//     router.get("postalpincode.in/api/pincode/201301" , (req,res)=>{
+//         console.log(data, req,res,'---------------------------------------------')
+//     })
+// let data = "http://postalpincode.in/api/pincode/`pincode`";
+
+//     try{
+//         console.log(res)
+// res.status(200).json({'message':'pincode dat get successfully'  , result : res})
+//     } catch(e){
+//         res.status(500).json({ statusCode: 500, error: e })
+//     }
+// })
 
 
 
